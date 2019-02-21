@@ -1,5 +1,6 @@
 use pge::*;
 use pge::gfx2d::{Transform2D, GFX2D};
+use pge::v2d::V2d;
 use image::GenericImageView;
 
 struct GameState {
@@ -24,18 +25,16 @@ impl State for GameState {
         let mx = pge.get_mouse_x() as f32;
         let my = pge.get_mouse_y() as f32;
 
-        let mut px1: f32 = mx - 32.0;
-        let mut px2: f32 = mx - 96.0;
-		let mut py1: f32 = my - 32.0;
-        let mut py2: f32 = my - 32.0;
-		let pr1: f32 = 1.0 / (px1*px1 + py1*py1).sqrt();
-		let pr2: f32 = 1.0 / (px2*px2 + py2*py2).sqrt();
-		px1 = 22.0 * (px1 * pr1) + 32.0;
-		py1 = 22.0 * (py1 * pr1) + 32.0;
-		px2 = 22.0 * (px2 * pr2) + 96.0;
-		py2 = 22.0 * (py2 * pr2) + 32.0;
-		pge.fill_circle(px1 as i32, py1 as i32, 8, &CYAN);
-		pge.fill_circle(px2 as i32, py2 as i32, 8, &CYAN);
+		let mut p1 = V2d::new(mx - 32.0, my - 32.0);
+		let pr1 = 1.0 / p1.mag();
+		p1 = p1 * 22.0 * pr1 + V2d::new(32.0, 32.0);
+
+		let mut p2 = V2d::new(mx - 96.0, my - 32.0);
+		let pr2 = 1.0 / p2.mag();
+		p2 = p2 * 22.0 * pr2 + V2d::new(96.0, 32.0);
+
+		pge.fill_circle(p1.x as i32, p1.y as i32, 8, &CYAN);
+		pge.fill_circle(p2.x as i32, p2.y as i32, 8, &CYAN);
 
         pge.draw_line(10, 70, 54, 70, &WHITE);	// Lines
 		pge.draw_line(54, 70, 70, 54, &WHITE);
