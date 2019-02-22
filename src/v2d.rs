@@ -1,7 +1,13 @@
 use num_traits::Float;
 use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
 
+// Very basic 2D vector type.
+// This is a bit over complicated because I feature matched the C++ version javidx9 wrote.
+//   Missing stuff - 
+//      index operator
+//      
 
+#[derive(Debug, Clone)]
 pub struct V2d<T> 
 where 
     T : Float,
@@ -20,7 +26,7 @@ impl<T> V2d<T> where T : Float {
     }
 
     pub fn norm(&self) -> Self {
-        let r = T::one() / self.mag();
+        let r = T::one() / self.mag();              // T::one() seems goofy, but this gives us the proper type for f32 or f64
         V2d { x: self.x * r, y: self.y * r }
     }
 

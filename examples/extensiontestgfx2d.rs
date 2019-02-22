@@ -25,6 +25,8 @@ impl State for GameState {
         let mx = pge.get_mouse_x() as f32;
         let my = pge.get_mouse_y() as f32;
 
+		// test v2d type
+		// p1 & p2 are inferred to be f32 because mx & my are f32
 		let mut p1 = V2d::new(mx - 32.0, my - 32.0);
 		let pr1 = 1.0 / p1.mag();
 		p1 = p1 * 22.0 * pr1 + V2d::new(32.0, 32.0);
