@@ -1,5 +1,5 @@
 use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, Key};
-
+use num_traits::Float;
 
 use std::time::Instant;
 use std::mem;
@@ -361,9 +361,13 @@ impl PGE {
                 let d = self.draw_target[self.current_draw_target].get_pixel(x, y);
                 let a = (p.a as f32 / 255.0) * self.blend_factor;
                 let c = 1.0 - a;
-                let r = a * p.r as f32 + c * d.r as f32;
-                let g = a * p.g as f32 + c * d.g as f32;
-                let b = a * p.b as f32 + c * d.b as f32;
+                //let r = a * p.r as f32 + c * d.r as f32;
+                //let g = a * p.g as f32 + c * d.g as f32;
+                //let b = a * p.b as f32 + c * d.b as f32;
+                // cheat: use fused multiply add
+                let r = a.mul_add(p.r as f32, c * d.r as f32);
+                let g = a.mul_add(p.g as f32, c * d.g as f32);
+                let b = a.mul_add(p.b as f32, c * d.b as f32);
                 self.draw_target[self.current_draw_target].set_pixel(x, y, &Pixel::rgb(r as u8, g as u8, b as u8));
             },
             PixelMode::Custom => {
