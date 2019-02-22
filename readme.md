@@ -1,6 +1,23 @@
 # rustyPixelGameEngine
 A port of olcPixelGameEngine to Rust, a tool used in javidx9's YouTube videos and projects. I've kept the original license and the link to documentation is straight to the official project.
 
+# About me
+* Fairly experienced, self-taught, C++ hobbyist programmer.
+* Turned to Rust because -
+  * Error messages usually make sense
+  * Package management is easy
+  * It makes you program in a way that is performance oriented
+  * Its fast
+* Why port to a different language
+  * Why not
+  * I like to understand the algorithms, rewriting them helps
+  * I love C++, but hate the tools
+
+# Goals
+* Obtain close to feature parity with PGE
+* Beat PGE's speed (I will cheat 😉)
+* Try to stay close to the API style of PGE, but I will stray if it makes sense
+
 # Differences
 * Many things may not be implemented.
 * I don't use SDL, I use a Rust crate called [minifb](https://github.com/emoon/rust_minifb) to handle the window creation and event code.
@@ -17,8 +34,6 @@ A port of olcPixelGameEngine to Rust, a tool used in javidx9's YouTube videos an
 Please see https://github.com/OneLoneCoder/olcPixelGameEngine/wiki
 
 # License (OLC-3)
-
-Copyright 2018, 2019 OneLoneCoder.com
 
 Redistribution and use in source and binary forms, with or without 
 modification, are permitted provided that the following conditions 
