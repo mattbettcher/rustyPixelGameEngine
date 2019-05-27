@@ -623,7 +623,9 @@ impl PGE {
         }
         */
         // Much faster, but still might be slow?
-        self.draw_target[self.current_draw_target].clear(p.clone());
+        //self.draw_target[self.current_draw_target].clear(p.clone());
+        // Proper way, adds about 30 fps
+        for i in self.draw_target[self.current_draw_target].data.iter_mut() { *i = p.clone(); }
     }
 
     fn construct_font_sheet() -> Sprite {
