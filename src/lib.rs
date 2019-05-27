@@ -547,7 +547,15 @@ impl PGE {
 
     pub fn draw_sprite(&mut self, x: i32, y: i32, sprite: &Sprite, scale: usize) {
         if scale > 1 {
-            // todo
+            for j in 0..sprite.height as i32 {
+                for i in 0..sprite.width as i32 {
+                    for is in 0..scale {
+                        for js in 0..scale {
+                            self.draw(x + (i * scale as i32) + is as i32, y + (j * scale as i32) + js as i32, &sprite.get_pixel(i, j));
+                        }
+                    }
+                }
+            }
         } else {
             for j in 0..sprite.height as i32 {
                 for i in 0..sprite.width as i32 {
@@ -557,9 +565,17 @@ impl PGE {
         }
     }
 
-    pub fn draw_parital_sprite(&mut self, x: i32, y: i32, sprite: &Sprite, ox: i32, oy: i32, w: i32, h: i32, scale: usize) {
+    pub fn draw_parital_sprite(&mut self, x: i32, y: i32, sprite: &Sprite, ox: i32, oy: i32, w: i32, h: i32, scale: usize) {      
         if scale > 1 {
-            // todo
+            for j in 0..h as i32 {
+                for i in 0..w as i32 {
+                    for is in 0..scale {
+                        for js in 0..scale {
+                            self.draw(x + (i * scale as i32) + is as i32, y + (j * scale as i32) + js as i32, &sprite.get_pixel(ox + i, oy + j));
+                        }
+                    }
+                }
+            }
         } else {
             for j in 0..h as i32 {
                 for i in 0..w as i32 {
