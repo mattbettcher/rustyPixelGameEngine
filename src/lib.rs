@@ -1,9 +1,10 @@
+use crate::v2d::V2d;
 use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, Key};
 use num_traits::Float;
 
 use std::time::Instant;
 use std::mem;
-
+use std::cmp;
 
 pub mod time;
 pub mod gfx2d;
@@ -471,8 +472,77 @@ impl PGE {
 		self.draw_line(x3, y3, x1, y1, p);
     }
 
-    pub fn fill_triangle(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, x3: i32, y3: i32, p: &Pixel) {
-        // todo
+    pub fn fill_triangle(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, x3: i32, y3: i32, col: &Pixel) {
+        // we use tuples for this for now
+        let v0 = (x1, y1);
+        let mut v1 = (x2, y2);
+        let mut v2 = (x3, y3);
+
+        // algorithm only fills counter clockwise triangles, so swap as needed
+        // For a triangle A B C, you can find the winding by computing the cross product (B - A) x (C - A). For 2d tri's, with z=0, it will only have a z component.
+        // To give all the same winding, swap vertices C and B if this z component is negative.
+        let cross = (v1.1 - v0.1) * (v2.0 - v1.0) - (v1.0 - v0.0) * (v2.1 - v1.1); 
+        if cross > 0 { std::mem::swap(&mut v1, &mut v2) }
+        
+        // Compute triangle bounding box and clip to screen bounds
+        let min_x = cmp::max(cmp::min(cmp::min(v0.0, v1.0), v2.0), 0);
+        let max_x = cmp::min(cmp::max(cmp::max(v0.0, v1.0), v2.0), self.screen_width as i32 - 1);
+        let min_y = cmp::max(cmp::min(cmp::min(v0.1, v1.1), v2.1), 0);
+        let max_y = cmp::min(cmp::max(cmp::max(v0.1, v1.1), v2.1), self.screen_height as i32 - 1);
+
+        // Triangle setup
+        let a01 = v0.1 - v1.1;
+        let b01 = v1.0 - v0.0;
+        let a12 = v1.1 - v2.1;
+        let b12 = v2.0 - v1.0;
+        let a20 = v2.1 - v0.1;
+        let b20 = v0.0 - v2.0;
+
+        // Determine edges
+        let is_top_left = |v0: (i32, i32), v1: (i32, i32)| -> bool {
+            v0.1 > v1.1 
+        };
+
+        // We follow fill rules and add a bias
+        let bias0 = if is_top_left(v1, v2) { 0 } else { -1 };
+        let bias1 = if is_top_left(v2, v0) { 0 } else { -1 };
+        let bias2 = if is_top_left(v0, v1) { 0 } else { -1 };
+
+        // Determine barycentric coordinates
+        let orient2d = |a: (i32,i32), b: (i32,i32), c: (i32,i32)| -> i32 {
+            (b.0-a.0)*(c.1-a.1) - (b.1-a.1)*(c.0-a.0)
+        };
+
+        let mut p = (min_x, min_y);
+        let mut w0_row = orient2d(v1, v2, p) + bias0;
+        let mut w1_row = orient2d(v2, v0, p) + bias1;
+        let mut w2_row = orient2d(v0, v1, p) + bias2;
+
+        // Rasterize
+        for y in min_y..max_y {
+            p.1 = y;
+            // Barycentric coordinates at start of row
+            let mut w0 = w0_row;
+            let mut w1 = w1_row;
+            let mut w2 = w2_row;
+
+                for x in min_x..max_x {
+                    p.0 = x;
+                    // If p is on or inside all edges, render pixel.
+                    if (w0 | w1 | w2) >= 0 {
+                        self.draw(p.0, p.1, col);
+                    }
+
+                    // One step to the right
+                    w0 += a12;
+                    w1 += a20;
+                    w2 += a01;
+                }
+            // One row step
+            w0_row += b12;
+            w1_row += b20;
+            w2_row += b01;
+        }
     }
 
     pub fn draw_sprite(&mut self, x: i32, y: i32, sprite: &Sprite, scale: usize) {
