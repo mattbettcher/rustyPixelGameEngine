@@ -1,5 +1,5 @@
 use crate::v2d::V2d;
-use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, Key};
+use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, ScaleMode, Key};
 use num_traits::Float;
 
 use std::time::Instant;
@@ -106,6 +106,7 @@ impl Sprite {
         }
     }
 
+    #[inline]
     pub fn get_pixel(&self, x: i32, y: i32) -> Pixel {
         if x >= 0 && x < self.width as i32 && y >= 0 && y < self.height as i32 {
             self.data[(y * self.width as i32 + x) as usize].clone()
@@ -114,6 +115,7 @@ impl Sprite {
         }
     }
 
+    #[inline]
     pub fn set_pixel(&mut self, x: i32, y: i32, p: &Pixel) {
         if x >= 0 && x < self.width as i32 && y >= 0 && y < self.height as i32 {
             self.data[(y * self.width as i32 + x) as usize] = p.clone();
@@ -154,8 +156,8 @@ pub struct PGE {
     screen_height: i32,
     pixel_width: i32,
     pixel_height: i32,
-    pixel_x: f32,
-    pixel_y: f32,
+    //pixel_x: f32,
+    //pixel_y: f32,
     mouse_pos_x: i32,
     mouse_pos_y: i32,
     font: Sprite,
@@ -176,12 +178,12 @@ impl PGE {
             old_keys: None,
             keys: None,
             active: true,
-            screen_width: screen_w as i32 / pixel_w as i32,
-            screen_height: screen_h as i32 / pixel_h as i32,
+            screen_width: screen_w as i32,
+            screen_height: screen_h as i32,
             pixel_width: pixel_w as i32,
             pixel_height: pixel_h as i32,
-            pixel_x: 2.0 / screen_w as f32,
-            pixel_y: 2.0 / screen_h as f32,
+            //pixel_x: 2.0 / screen_w as f32,
+            //pixel_y: 2.0 / screen_h as f32,
             mouse_pos_x: 0,
             mouse_pos_y: 0,
             font: PGE::construct_font_sheet(),
@@ -196,12 +198,13 @@ impl PGE {
     pub fn start(&mut self, state: &mut State) {
         // Construct the window
         self.window = Some(Window::new(&self.app_name,
-                                640,
-                                480,
+                                (self.screen_width * self.pixel_width) as usize,
+                                (self.screen_height * self.pixel_height) as usize,
                                 WindowOptions {
-                                    scale: Scale::X2,
+                                    scale_mode: ScaleMode::Stretch,
+                                    scale: Scale::X1,
                                     borderless: false,
-                                    resize: false,
+                                    resize: true,
                                     title: true
                                 })
                                 .unwrap_or_else(|e| {panic!("{}", e)}));
@@ -236,7 +239,9 @@ impl PGE {
             if let Some(window) = &mut self.window {
                 unsafe {
                     window.update_with_buffer(
-                        mem::transmute(self.draw_target[self.current_draw_target].data.as_slice())
+                        mem::transmute(self.draw_target[self.current_draw_target].data.as_slice()),
+                        (self.screen_width) as usize,
+                        (self.screen_height) as usize,
                         ).unwrap_or_else(|e| {panic!("{}", e)});
                 }
             }
@@ -247,7 +252,7 @@ impl PGE {
             if self.frame_timer >= 1.0 {
                 self.frame_timer -= 1.0;
                 if let Some(window) = &mut self.window {
-                    let mut title = "OneLoneCoder.com - Pixel Game Engine - ".to_owned();
+                    let mut title = "".to_owned();
                     title += &self.app_name;
                     title += " - FPS: ";
                     title += &self.frame_count.to_string();
