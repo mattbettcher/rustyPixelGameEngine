@@ -152,8 +152,8 @@ impl GFX2D {
         }
 
 		// Iterate through render space, and sample Sprite from suitable texel location
-        for i in sx as i32 .. ex as i32 {
-            for j in sy as i32 .. ey as i32 {
+        for j in sy as i32 .. ey as i32 {
+            for i in sx as i32 .. ex as i32 {
                 let o = transform.backward(i as f32, j as f32);
                 pge.draw(i, j, &sprite.get_pixel((o.0 + 0.5) as i32, (o.1 + 0.5) as i32));
             }
