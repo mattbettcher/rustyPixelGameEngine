@@ -1,6 +1,6 @@
-use crate::v2d::V2d;
+
 use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, ScaleMode, Key, KeyRepeat};
-use num_traits::Float;
+
 
 use std::time::Instant;
 use std::mem;
@@ -8,6 +8,7 @@ use std::cmp;
 
 pub mod time;
 pub mod gfx2d;
+pub mod gfx3d;
 pub mod v2d;
 
 
