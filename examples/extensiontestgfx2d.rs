@@ -1,6 +1,6 @@
 use pge::*;
 use pge::gfx2d::{Transform2D, GFX2D};
-use pge::v2d::V2d;
+use pge::gfx2d::vec2d::Vec2d;
 use image::GenericImageView;
 use minifb::Key;
 
@@ -31,13 +31,13 @@ impl State for GameState {
 
 		// test v2d type
 		// p1 & p2 are inferred to be f32 because mx & my are f32
-		let mut p1 = V2d::new(mx - 32.0, my - 32.0);
+		let mut p1 = Vec2d::new(mx - 32.0, my - 32.0);
 		let pr1 = 1.0 / p1.mag();
-		p1 = p1 * 22.0 * pr1 + V2d::new(32.0, 32.0);
+		p1 = p1 * 22.0 * pr1 + Vec2d::new(32.0, 32.0);
 
-		let mut p2 = V2d::new(mx - 96.0, my - 32.0);
+		let mut p2 = Vec2d::new(mx - 96.0, my - 32.0);
 		let pr2 = 1.0 / p2.mag();
-		p2 = p2 * 22.0 * pr2 + V2d::new(96.0, 32.0);
+		p2 = p2 * 22.0 * pr2 + Vec2d::new(96.0, 32.0);
 
 		pge.fill_circle(p1.x as i32, p1.y as i32, 8, &CYAN);
 		pge.fill_circle(p2.x as i32, p2.y as i32, 8, &CYAN);

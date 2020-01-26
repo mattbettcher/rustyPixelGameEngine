@@ -1,5 +1,7 @@
 use crate::{Sprite, PGE};
 
+pub mod vec2d;
+
 pub struct Transform2D {
     pub matrix: [[[f32; 3]; 3]; 4],
     pub target: usize,

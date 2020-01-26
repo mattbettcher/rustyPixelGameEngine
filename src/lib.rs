@@ -9,7 +9,6 @@ use std::cmp;
 pub mod time;
 pub mod gfx2d;
 pub mod gfx3d;
-pub mod v2d;
 
 
 // TODO: ordering on this is format dependent?
