@@ -61,3 +61,60 @@ impl Sub for Vec3d {
     }
 }
 
+impl Mul<f32> for Vec3d {
+    type Output = Vec3d;
+
+    fn mul(self, rhs: f32) -> Vec3d {
+        Vec3d {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+            w: 1.0,
+        }
+    }
+}
+
+impl Div<f32> for Vec3d {
+    type Output = Vec3d;
+
+    fn div(self, rhs: f32) -> Vec3d {
+        Vec3d {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+            w: 1.0,
+        }
+    }
+}
+
+impl AddAssign for Vec3d {
+    fn add_assign(&mut self, rhs: Vec3d) {
+        self.x = self.x + rhs.x;
+        self.y = self.y + rhs.y;
+        self.z = self.z + rhs.z;
+    }
+}
+
+impl SubAssign for Vec3d {
+    fn sub_assign(&mut self, rhs: Vec3d) {
+        self.x = self.x - rhs.x;
+        self.y = self.y - rhs.y;
+        self.z = self.z - rhs.z;
+    }
+}
+
+impl MulAssign<f32> for Vec3d {
+    fn mul_assign(&mut self, rhs: f32) {
+        self.x = self.x * rhs;
+        self.y = self.y * rhs;
+        self.z = self.z * rhs;
+    }
+}
+
+impl DivAssign<f32> for Vec3d {
+    fn div_assign(&mut self, rhs: f32) {
+        self.x = self.x / rhs;
+        self.y = self.y / rhs;
+        self.z = self.z / rhs;
+    }
+}
