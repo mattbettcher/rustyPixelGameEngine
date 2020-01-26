@@ -1,5 +1,5 @@
 use crate::v2d::V2d;
-use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, ScaleMode, Key};
+use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, ScaleMode, Key, KeyRepeat};
 use num_traits::Float;
 
 use std::time::Instant;
@@ -65,11 +65,11 @@ pub enum PixelMode {
     Normal, Mask, Alpha, Custom
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum HWButton {
-    Pressed,
-    Released,
-    Held,
+#[derive(Default, Debug, Clone, PartialEq, Copy)]
+pub struct HWButton {
+    pub pressed: bool,
+    pub released: bool,
+    pub held: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -149,8 +149,10 @@ pub struct PGE {
     draw_target: Vec<Sprite>,
     current_draw_target: usize,
     window: Option<Window>,
-    old_keys: Option<Vec<Key>>,
-    keys: Option<Vec<Key>>,
+    current_mouse_state: Vec<HWButton>,
+    current_key_state: Vec<HWButton>,
+    previous_mouse_state: [bool; 3],
+    previous_key_state: [bool; 256],
     active: bool,
     screen_width: i32,
     screen_height: i32,
@@ -175,8 +177,10 @@ impl PGE {
             draw_target: vec![Sprite::new(screen_w, screen_h)],
             current_draw_target: 0,
             window: None,
-            old_keys: None,
-            keys: None,
+            previous_mouse_state: [false; 3],
+            previous_key_state: [false; 256],
+            current_mouse_state: vec![Default::default(); 3],
+            current_key_state: vec![Default::default(); 256],
             active: true,
             screen_width: screen_w as i32,
             screen_height: screen_h as i32,
@@ -220,12 +224,63 @@ impl PGE {
             let current_time = Instant::now();
             let elapsed = current_time - last_time;
             last_time = current_time;
-            self.old_keys = self.keys.clone();
+
+            // Handle User Input - Keyboard
+            let mut new_key_state: [bool; 256] = [false; 256];
+            if let Some(win) = &mut self.window { 
+                let keys = win.get_keys_pressed(KeyRepeat::No).unwrap();
+                for key in keys {
+                    new_key_state[key as usize] = true;
+                }
+            };
+
+            for i in 0..256 {
+                self.current_key_state[i].pressed = false;
+                self.current_key_state[i].released = false;
+
+                if new_key_state[i] != self.previous_key_state[i] {
+                    if new_key_state[i] {
+                        self.current_key_state[i].pressed = !self.current_key_state[i].held;
+                        self.current_key_state[i].held = true;
+                    }
+                    else
+                    {
+                        self.current_key_state[i].released = true;
+                        self.current_key_state[i].held = false;
+                    }
+                }
+
+                self.previous_key_state[i] = new_key_state[i];
+            }
+
+            // Handle User Input - Mouse
+            let mut new_mouse_state: [bool; 3] = [false; 3];
+            new_mouse_state[0] = if let Some(win) = &mut self.window { win.get_mouse_down(MouseButton::Left) } else { false };
+            new_mouse_state[1] = if let Some(win) = &mut self.window { win.get_mouse_down(MouseButton::Middle) } else { false };
+            new_mouse_state[2] = if let Some(win) = &mut self.window { win.get_mouse_down(MouseButton::Right) } else { false };
+            
+            for i in 0..3 {
+                self.current_mouse_state[i].pressed = false;
+                self.current_mouse_state[i].released = false;
+
+                if new_mouse_state[i] != self.previous_mouse_state[i] {
+                    if new_mouse_state[i] {
+                        self.current_mouse_state[i].pressed = !self.current_mouse_state[i].held;
+                        self.current_mouse_state[i].held = true;
+                    }
+                    else
+                    {
+                        self.current_mouse_state[i].released = true;
+                        self.current_mouse_state[i].held = false;
+                    }
+                }
+
+                self.previous_mouse_state[i] = new_mouse_state[i];
+            }
 
             let mut mpos = (0.0, 0.0);
             if let Some(window) = &mut self.window   {
-                mpos = window.get_mouse_pos(MouseMode::Pass).unwrap();    
-                self.keys = window.get_keys();
+                mpos = window.get_mouse_pos(MouseMode::Pass).unwrap();
             }
             self.update_mouse(mpos.0 as i32, mpos.1 as i32);
 
@@ -281,18 +336,7 @@ impl PGE {
     }
 
     pub fn get_key(&mut self, k: Key) -> HWButton {
-        if let Some(keys) = &self.keys {
-            if let Some(old_keys) = &self.old_keys {
-                if keys.contains(&k) && old_keys.contains(&k) {
-                    return HWButton::Held
-                } else if keys.contains(&k) && !old_keys.contains(&k) {
-                    return HWButton::Pressed
-                } else {
-                    return HWButton::Released
-                }
-            }
-        }
-        HWButton::Released
+        self.current_key_state[k as usize]
     }
 
     pub fn get_mouse_x(&mut self) -> i32 {
@@ -304,22 +348,7 @@ impl PGE {
     }
 
     pub fn get_mouse(&mut self, button: usize) -> HWButton {
-        if let Some(window) = &self.window {
-            match button {
-                0 => if window.get_mouse_down(MouseButton::Left) {
-                        return HWButton::Pressed
-                    } else { return HWButton::Released },
-                1 => if window.get_mouse_down(MouseButton::Middle) {
-                        return HWButton::Pressed
-                    } else { return HWButton::Released },
-                2 => if window.get_mouse_down(MouseButton::Right) {
-                        return HWButton::Pressed
-                    } else { return HWButton::Released },
-                _ => return HWButton::Released
-            }
-        } else {
-            return HWButton::Released
-        }
+        self.current_mouse_state[button]
     }
 
     fn update_mouse(&mut self, x: i32, y: i32) {

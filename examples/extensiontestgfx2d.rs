@@ -2,6 +2,7 @@ use pge::*;
 use pge::gfx2d::{Transform2D, GFX2D};
 use pge::v2d::V2d;
 use image::GenericImageView;
+use minifb::Key;
 
 struct GameState {
     spr: Sprite,
@@ -11,6 +12,9 @@ struct GameState {
 
 impl State for GameState {
     fn on_user_create(&mut self) -> bool {
+		for _ in 0..16 {
+			self.list_events.push("".to_owned());
+		}
         true
     }
 
@@ -48,11 +52,27 @@ impl State for GameState {
 		let mouse_pos_string = format!("Your Mouse Position is:\nX={0:.6}\nY={1:.6}", mx as f32, my as f32);
 		pge.draw_string(10, 130, &mouse_pos_string, &WHITE, 1);
 		
+		let mut add_event = |s: String| -> String {
+			self.list_events.push(s);
+			self.list_events.remove(0)
+		};
 
-		if pge.get_mouse(0) == HWButton::Pressed {
+		if pge.get_mouse(0).pressed { add_event("Mouse Button 0 Down".to_owned());} 
+		if pge.get_mouse(0).released { add_event("Mouse Button 0 Up".to_owned());} 
+		if pge.get_mouse(1).pressed  { add_event("Mouse Button 1 Down".to_owned());} 
+		if pge.get_mouse(1).released { add_event("Mouse Button 1 Up".to_owned());} 
+		if pge.get_mouse(2).pressed  { add_event("Mouse Button 2 Down".to_owned());} 
+		if pge.get_mouse(2).released { add_event("Mouse Button 2 Up".to_owned());}
 
-		} 
-        // Draw Event Log
+		if pge.get_key(Key::A).pressed { add_event("A key Down".to_owned());} 
+		if pge.get_key(Key::A).released { add_event("A key Up".to_owned());} 
+
+		// Draw Event Log
+		let mut n_log: u8 = 0;
+		for s in &self.list_events {
+			pge.draw_string(200, n_log as i32 * 8 + 20, &s, &Pixel::rgb(n_log * 16, n_log * 16, n_log * 16), 1);
+			n_log += 1;
+		}
 
         // Test Text scaling and colours
 		pge.draw_string(0, 360, "Text Scale = 1", &WHITE, 1);
