@@ -1,14 +1,14 @@
 ### TODO
-* Mouse input (buttons)
-* Keyboard input
 * Window Scaling
 * Fill Triangle
 * 3D GFX Extension
+* Mouse position correction (now we can resize window and this needs more work)
 
 ### Bugs
-* Overdraw for circles when alpha blending
 
 
 ### Done
-* Mouse position correction?
+* Keyboard input
+* Mouse input (buttons)
 * Pixel Blending
+* Overdraw for circles when alpha blending
