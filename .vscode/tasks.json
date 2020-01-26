@@ -9,13 +9,23 @@
             "command": "cargo",
             "args": [
                 "build",
-                //"--release",
                 "--example",
                 "${fileBasenameNoExtension}"
             ],
             "problemMatcher": [
                 "$rustc"
             ]
+        },
+        {
+            "type": "cargo",
+            "subcommand": "build",
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }
