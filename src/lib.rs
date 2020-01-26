@@ -427,15 +427,38 @@ impl PGE {
         let mut x0 = 0;
 		let mut y0 = radius;
 		let mut d = 3 - 2 * radius;
-		if radius <= 0 { return }
+        if radius <= 0 { return }
+
+        let mut scanline_rendered: [bool; 2048] = [false; 2048];
 
 		while y0 >= x0
 		{
-			// Modified to draw scan-lines instead of edges
-			self.draw_line(x - x0, y - y0, x + x0, y - y0, p);
-			self.draw_line(x - y0, y - x0, x + y0, y - x0, p);
-			self.draw_line(x - x0, y + y0, x + x0, y + y0, p);
-			self.draw_line(x - y0, y + x0, x + y0, y + x0, p);
+            // Modified to draw scan-lines instead of edges
+            if y-y0 > 0 && y-y0 < self.screen_height {
+                if scanline_rendered[(y - y0) as usize] == false {
+                    self.draw_line(x - x0, y - y0, x + x0, y - y0, p);
+                    scanline_rendered[(y - y0) as usize] = true;
+                }
+            }
+            if y-x0 > 0 && y-x0 < self.screen_height {
+                if scanline_rendered[(y - x0) as usize] == false {
+                    self.draw_line(x - y0, y - x0, x + y0, y - x0, p);
+                    scanline_rendered[(y - x0) as usize] = true;
+                }
+            }
+            if y+y0 > 0 && y+y0 < self.screen_height {
+                if scanline_rendered[(y + y0) as usize] == false {
+                    self.draw_line(x - x0, y + y0, x + x0, y + y0, p);
+                    scanline_rendered[(y + y0) as usize] = true;
+                }
+            }
+            if y+x0 > 0 && y+x0 < self.screen_height {
+                if scanline_rendered[(y + x0) as usize] == false {
+                    self.draw_line(x - y0, y + x0, x + y0, y + x0, p);
+                    scanline_rendered[(y + x0) as usize] = true;
+                }
+            }
+
 			if d < 0 { x0 += 1; d += 4 * x0 + 6;  }
 			else { x0 += 1; y0 -= 1; d += 4 * (x0 - y0) + 10; }
 		}
