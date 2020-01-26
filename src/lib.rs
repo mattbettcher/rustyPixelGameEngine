@@ -195,7 +195,7 @@ impl PGE {
         }
     }
 
-    pub fn start(&mut self, state: &mut State) {
+    pub fn start(&mut self, state: &mut dyn State) {
         // Construct the window
         self.window = Some(Window::new(&self.app_name,
                                 (self.screen_width * self.pixel_width) as usize,
