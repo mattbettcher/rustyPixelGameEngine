@@ -1,5 +1,5 @@
 use super::vec3d::Vec3d;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Mul};
 
 pub struct Mat4x4 {
     pub m: [[f32; 4]; 4],

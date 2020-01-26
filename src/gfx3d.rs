@@ -1,4 +1,4 @@
-use crate::{Sprite, PGE, Pixel};
+use crate::{Pixel};
 
 pub mod vec3d;
 pub mod mat4x4;
