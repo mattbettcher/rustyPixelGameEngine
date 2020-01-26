@@ -44,10 +44,9 @@ impl State for GameState {
 		pge.draw_rect(10, 80, 54, 30, &WHITE);
 		pge.fill_rect(10, 80, 54, 30, &WHITE);
 
-        // Multiline Text
-		let mpos = "Your Mouse Position is:\nX=".to_string() + &mx.to_string() + "\nY=" + &my.to_string();
-		pge.draw_string(10, 130, &mpos, &WHITE, 1);
-
+		// Multiline Text
+		let mouse_pos_string = format!("Your Mouse Position is:\nX={0:.6}\nY={1:.6}", mx as f32, my as f32);
+		pge.draw_string(10, 130, &mouse_pos_string, &WHITE, 1);
 		
 
 		if pge.get_mouse(0) == HWButton::Pressed {
@@ -87,6 +86,8 @@ impl State for GameState {
 
 		// Use extension to draw sprite with transform applied
 		GFX2D::draw_sprite(pge, &self.spr, &mut t1);
+
+		pge.draw_sprite(mx as i32, my as i32, &self.spr, 4);
 
         true
     }
