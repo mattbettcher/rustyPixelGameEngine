@@ -1,12 +1,6 @@
-use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
+use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};   
 
-// Very basic 2D vector type.
-// f32his is a bit over complicated because I feature matched the C++ version javidx9 wrote.
-//   Missing stuff - 
-//      index operator
-//      
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Vec2d
 {
     pub x: f32,
@@ -18,13 +12,13 @@ impl Vec2d {
         Vec2d { x, y }
     }
 
-    pub fn mag(&self) -> f32 {
+    pub fn length(&self) -> f32 {
         (self.x * self.x + self.y * self.y).sqrt()
     }
 
     pub fn norm(&self) -> Self {
-        let r = 1.0 / self.mag();
-        Vec2d { x: self.x * r, y: self.y * r }
+        let l = 1.0 / self.length();
+        Vec2d { x: self.x * l, y: self.y * l }
     }
 
     pub fn perp(&self) -> Self {

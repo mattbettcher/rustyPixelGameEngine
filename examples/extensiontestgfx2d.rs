@@ -32,11 +32,11 @@ impl State for GameState {
 		// test v2d type
 		// p1 & p2 are inferred to be f32 because mx & my are f32
 		let mut p1 = Vec2d::new(mx - 32.0, my - 32.0);
-		let pr1 = 1.0 / p1.mag();
+		let pr1 = 1.0 / p1.length();
 		p1 = p1 * 22.0 * pr1 + Vec2d::new(32.0, 32.0);
 
 		let mut p2 = Vec2d::new(mx - 96.0, my - 32.0);
-		let pr2 = 1.0 / p2.mag();
+		let pr2 = 1.0 / p2.length();
 		p2 = p2 * 22.0 * pr2 + Vec2d::new(96.0, 32.0);
 
 		pge.fill_circle(p1.x as i32, p1.y as i32, 8, &CYAN);
