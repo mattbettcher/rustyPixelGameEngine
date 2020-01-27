@@ -1,4 +1,5 @@
 use super::vec3d::Vec3d;
+use super::vec4d::Vec4d;
 use std::ops::{Mul};
 
 pub struct Mat4x4 {
@@ -83,13 +84,31 @@ impl Mat4x4 {
             ],
         }
     }
+
+    pub fn make_point_at(pos: Vec3d, target: Vec3d, up: Vec3d) -> Self {
+        let new_forward = (target - pos).norm();
+        let t = up.dot(&new_forward);
+        let new_up = (up - (new_forward * t)).norm();
+        let new_right = new_up.cross(&new_forward);
+
+        Mat4x4 {
+            m: [
+                [new_right.x, new_right.y, new_right.z, 0.0],
+                [new_up.x, new_up.y, new_up.z, 0.0],
+                [new_forward.x, new_forward.y, new_forward.z, 0.0],
+                [pos.x, pos.y, pos.z, 1.0],
+            ]
+        }
+    }
+
+    
 }
 
-impl Mul<Vec3d> for Mat4x4 {
-    type Output = Vec3d;
+impl Mul<Vec4d> for Mat4x4 {
+    type Output = Vec4d;
 
-    fn mul(self, rhs: Vec3d) -> Vec3d {
-        Vec3d {
+    fn mul(self, rhs: Vec4d) -> Vec4d {
+        Vec4d {
             x: rhs.x * self.m[0][0] + rhs.y * self.m[1][0] + rhs.z * self.m[2][0] + rhs.w * self.m[3][0],
             y: rhs.x * self.m[0][1] + rhs.y * self.m[1][1] + rhs.z * self.m[2][1] + rhs.w * self.m[3][1],
             z: rhs.x * self.m[0][2] + rhs.y * self.m[1][2] + rhs.z * self.m[2][2] + rhs.w * self.m[3][2],
