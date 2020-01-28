@@ -13,6 +13,10 @@ impl Vec4d {
         Vec4d { x, y, z, w: 1.0 }
     }
 
+    pub fn zero() -> Self {
+        Vec4d { x: 0.0, y: 0.0, z: 0.0, w: 0.0 }
+    }
+
     pub fn length(&self) -> f32 {
         (self.dot(self)).sqrt()
     }

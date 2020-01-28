@@ -12,7 +12,7 @@ pub mod gfx3d;
 
 
 // TODO: ordering on this is format dependent?
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Pixel {
     pub b: u8,
     pub g: u8,

@@ -1,4 +1,5 @@
 use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
+use super::super::gfx2d::vec2d::Vec2d;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3d {
@@ -10,6 +11,10 @@ pub struct Vec3d {
 impl Vec3d {
     pub fn new(x: f32, y: f32, z: f32) -> Self {
         Vec3d { x, y, z }
+    }
+
+    pub fn zero() -> Self {
+        Vec3d { x: 0.0, y: 0.0, z: 0.0 }
     }
 
     pub fn length(&self) -> f32 {
@@ -31,6 +36,10 @@ impl Vec3d {
             y: self.z * rhs.x - self.x * rhs.z,
             z: self.x * rhs.y - self.y * rhs.x
         }
+    }
+
+    pub fn as_vec2d(&self) -> Vec2d {
+        Vec2d { x: self.x, y: self.y }
     }
 }
 
