@@ -11,4 +11,4 @@ num-traits = ""
 
 [dev-dependencies]
 rand = ""
-image = "0.21.0"
+image = "0.22.4"

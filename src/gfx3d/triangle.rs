@@ -1,3 +1,5 @@
+use crate::Sprite;
+use crate::PGE;
 use crate::{Pixel};
 use super::vec3d::Vec3d;
 use super::vec4d::Vec4d;
@@ -15,8 +17,7 @@ impl Triangle {
     pub fn new() -> Self {
         Triangle { p: [Vec4d::zero(); 3], t: [Vec3d::zero(); 3], col: Pixel::rgb(0, 0, 0) }
     }
-    
-    // TODO - not sure if I like returning a vec over a tuple?
+
     pub fn clip_against_plane(&self, plane: &Plane) -> Vec<Triangle> {
         let pn = plane.normal.norm();
 
@@ -28,8 +29,7 @@ impl Triangle {
         let mut inside_count = 0;
         let mut outside_count = 0;
 
-        let dist = |p: &Vec4d| -> f32 { 
-            //let n = p.norm(); // TODO - needed?????
+        let dist = |p: &Vec4d| -> f32 {
             pn.dot(p) - pn.dot(&plane.position)
         };
 
@@ -93,8 +93,8 @@ impl Triangle {
                 new_tri.p[1] = a.0;
                 new_tri.p[2] = b.0;
 
-                new_tri.t[1] = (outside_points[0] - inside_points[0]).as_vec3d() + inside_tex[0] * a.1;
-                new_tri.t[2] = (outside_points[1] - inside_points[0]).as_vec3d() + inside_tex[0] * b.1;
+                new_tri.t[1] = inside_tex[0] + ((outside_tex[0] - inside_tex[0]) * a.1);
+                new_tri.t[2] = inside_tex[0] + ((outside_tex[1] - inside_tex[0]) * b.1);
 
                 vec!(new_tri)
             },
@@ -115,7 +115,7 @@ impl Triangle {
 
                 let a = plane.line_intersect_plane(inside_points[0], outside_points[0]);
                 new_tri_a.p[2] = a.0;
-                new_tri_a.t[2] = (outside_points[0] - inside_points[0]).as_vec3d() + inside_tex[0] * a.1;
+                new_tri_a.t[2] = inside_tex[0] + ((outside_tex[0] - inside_tex[0]) * a.1);
 
                 // The second triangle is composed of one of he inside points, a
                 // new point determined by the intersection of the other side of the 
@@ -128,7 +128,7 @@ impl Triangle {
 
                 let b = plane.line_intersect_plane(inside_points[1], outside_points[0]);
                 new_tri_b.p[2] = b.0;
-                new_tri_b.t[2] = (outside_points[0] - inside_points[1]).as_vec3d() + inside_tex[1] * b.1;
+                new_tri_b.t[2] = inside_tex[1] + ((outside_tex[0] - inside_tex[1]) * b.1);
 
                 vec!(new_tri_a, new_tri_b)
             },

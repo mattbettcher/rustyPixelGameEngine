@@ -121,7 +121,8 @@ impl Sprite {
             self.data[(y * self.width as i32 + x) as usize] = p.clone();
         }
     }
-
+    
+    #[inline]
     pub fn sample(&self, x: f32, y: f32) -> Pixel {
         let sx = (x * self.width as f32) as i32;
         let sy = (y * self.height as f32) as i32;
