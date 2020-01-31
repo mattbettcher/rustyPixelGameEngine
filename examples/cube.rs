@@ -20,11 +20,14 @@ impl State for GameState {
         self.time += dt;
         pge.clear(&Pixel::rgb(0, 0, 0));
 
-        self.pipeline.set_projection(80.0, 1.0, 0.1, 1000.0, 0.0, 0.0, 400.0, 400.0);
-        self.pipeline.set_camera(Vec3d{x: 0.0, y: 0.0, z: -3.0}, 
+        self.pipeline.set_projection(80.0, pge.screen_height as f32 / pge.screen_width as f32, 1.4, 1000.0, 0.0, 0.0, pge.screen_width as f32, pge.screen_height as f32);
+        self.pipeline.set_camera(Vec3d{x: 0.0, y: 0.0, z: -2.0}, 
             Vec3d{x: 0.0, y: 0.0, z: 1.0},
             Vec3d{x: 0.0, y: 1.0, z: 0.0});
-        self.pipeline.set_transform(Mat4x4::make_translation(-0.5, -0.5, -0.5) * Mat4x4::make_rotation_z(self.time) * Mat4x4::make_rotation_y(self.time));
+        self.pipeline.set_transform(Mat4x4::make_translation(-0.5, -0.5, -0.5) * 
+            Mat4x4::make_rotation_z(self.time * 0.5) * 
+            Mat4x4::make_rotation_y(self.time * 0.5) * 
+            Mat4x4::make_rotation_x(self.time * 0.5));
 
         let cube = vec!{
 

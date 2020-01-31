@@ -17,7 +17,7 @@ impl Triangle {
     }
     
     // TODO - not sure if I like returning a vec over a tuple?
-    pub fn clip_against_plane(&self, plane: &Plane) -> Option<Vec<Triangle>> {
+    pub fn clip_against_plane(&self, plane: &Plane) -> Vec<Triangle> {
         let pn = plane.normal.norm();
 
         let mut inside_points: [Vec4d; 3] = [Vec4d::zero(); 3];
@@ -76,14 +76,16 @@ impl Triangle {
         
         match (inside_count, outside_count) {
             // zero inside - clip entire triangle
-            (0, _) => None,
+            (0, _) => Vec::<Triangle>::new(),
             // all inside - no clipping needed
-            (3, _) => Some(vec!(*self)),
+            (3, _) => vec!(*self),
             // one inside, two outside - one smaller triangle
             (1, 2) => {
                 let mut new_tri = Triangle::new();
+                // The inside point is valid, so keep that...
                 new_tri.p[0] = inside_points[0];
                 new_tri.t[0] = inside_tex[0];
+                new_tri.col = self.col;
 
                 let a = plane.line_intersect_plane(inside_points[0], outside_points[0]);
                 let b = plane.line_intersect_plane(inside_points[0], outside_points[1]);
@@ -94,7 +96,7 @@ impl Triangle {
                 new_tri.t[1] = (outside_points[0] - inside_points[0]).as_vec3d() + inside_tex[0] * a.1;
                 new_tri.t[2] = (outside_points[1] - inside_points[0]).as_vec3d() + inside_tex[0] * b.1;
 
-                Some(vec!(new_tri))
+                vec!(new_tri)
             },
             // two inside, one outside - clipped to a quad (2 triangles)
             (2, 1) => {
@@ -106,13 +108,14 @@ impl Triangle {
                 // intersects with the plane
                 new_tri_a.p[0] = inside_points[0];
                 new_tri_a.t[0] = inside_tex[0];
+                new_tri_a.col = self.col;
 
                 new_tri_a.p[1] = inside_points[1];
                 new_tri_a.t[1] = inside_tex[1];
 
                 let a = plane.line_intersect_plane(inside_points[0], outside_points[0]);
-                new_tri_a.p[1] = a.0;
-                new_tri_a.t[1] = (outside_points[0] - inside_points[0]).as_vec3d() + inside_tex[0] * a.1;
+                new_tri_a.p[2] = a.0;
+                new_tri_a.t[2] = (outside_points[0] - inside_points[0]).as_vec3d() + inside_tex[0] * a.1;
 
                 // The second triangle is composed of one of he inside points, a
                 // new point determined by the intersection of the other side of the 
@@ -121,12 +124,13 @@ impl Triangle {
                 new_tri_b.t[0] = inside_tex[1];
                 new_tri_b.p[1] = new_tri_a.p[2];
                 new_tri_b.t[1] = new_tri_a.t[2];
+                new_tri_b.col = self.col;
 
                 let b = plane.line_intersect_plane(inside_points[1], outside_points[0]);
                 new_tri_b.p[2] = b.0;
                 new_tri_b.t[2] = (outside_points[0] - inside_points[1]).as_vec3d() + inside_tex[1] * b.1;
 
-                Some(vec!(new_tri_a, new_tri_b))
+                vec!(new_tri_a, new_tri_b)
             },
             // not possible
             (_, _) => panic!(),

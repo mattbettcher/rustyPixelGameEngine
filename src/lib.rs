@@ -154,8 +154,8 @@ pub struct PGE {
     previous_mouse_state: [bool; 3],
     previous_key_state: [bool; 256],
     active: bool,
-    screen_width: i32,
-    screen_height: i32,
+    pub screen_width: i32,
+    pub screen_height: i32,
     pixel_width: i32,
     pixel_height: i32,
     //pixel_x: f32,
@@ -213,6 +213,9 @@ impl PGE {
                                 })
                                 .unwrap_or_else(|e| {panic!("{}", e)}));
 
+        if let Some(win) = &mut self.window {
+            win.limit_update_rate(Some(std::time::Duration::from_millis(16)));
+        }
         if !state.on_user_create() {
             self.active = false;
         }
@@ -426,6 +429,7 @@ impl PGE {
             //buffer[(y * (WIDTH as i32) + x) as usize] = color;
             self.draw(x, y, p);
             if x == x2 && y == y2 { break };
+            if x == x2 || y == y2 { break };
             if err > -dx {err = err - dy; x = x + sx; }
             if err < dy  {err = err + dx; y = y + sy; }        
         }
