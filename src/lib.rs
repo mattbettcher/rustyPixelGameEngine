@@ -214,7 +214,7 @@ impl PGE {
                                 .unwrap_or_else(|e| {panic!("{}", e)}));
 
         if let Some(win) = &mut self.window {
-            win.limit_update_rate(Some(std::time::Duration::from_millis(16)));
+            win.limit_update_rate(None);//Some(std::time::Duration::from_millis(16)));
         }
         if !state.on_user_create() {
             self.active = false;

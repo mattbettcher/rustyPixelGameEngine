@@ -70,8 +70,6 @@ impl Pipeline {
     }
 
     pub fn render(&mut self, pge: &mut PGE, triangles: Vec<Triangle>) { // flags: RenderOptions, cull_dir: CullDirection) {
-        let mut line = 1;
-        
         let world_view = self.world * self.view;
         //let mut triangles_to_render: Vec<Triangle> = Vec::new();
         // Process Triangles
@@ -96,9 +94,6 @@ impl Pipeline {
             let near_clipped_tris = tri_transformed.clip_against_plane(&Plane { position: Vec4d{x: 0.0, y:0.0, z:self.near, w:1.0},
                 normal: Vec4d{x: 0.0, y:0.0, z:1.0, w:1.0} });
 
-            pge.draw_string(10, 20 * line, &near_clipped_tris.len().to_string(), &Pixel::rgb(255,255,255), 2);
-            line += 1;
-
             for near_tri in near_clipped_tris {
                 let mut tri_projected = Triangle::new();
                 tri_projected.col = near_tri.col;
@@ -112,35 +107,63 @@ impl Pipeline {
                 tri_projected.p[0] /= tri_projected.p[0].w;
                 tri_projected.p[1] /= tri_projected.p[1].w;
                 tri_projected.p[2] /= tri_projected.p[2].w;
-                
-                // Scale to viewport
-                let mut tri_raster = tri_projected;
-                tri_raster.col = tri_projected.col;
 
-                let mut offset_view = Vec4d { x:1.0,y:1.0,z:0.0, w:1.0 };
-                tri_raster.p[0] += offset_view;
-                tri_raster.p[1] += offset_view;
-                tri_raster.p[2] += offset_view;
-                tri_raster.p[0].x *= 0.5 * self.view_w;
-                tri_raster.p[0].y *= 0.5 * self.view_h;
-                tri_raster.p[1].x *= 0.5 * self.view_w;
-                tri_raster.p[1].y *= 0.5 * self.view_h;
-                tri_raster.p[2].x *= 0.5 * self.view_w;
-                tri_raster.p[2].y *= 0.5 * self.view_h;
-                offset_view = Vec4d { x:self.view_x, y:self.view_y,z:0.0, w:1.0 };
-                tri_raster.p[0] += offset_view;
-                tri_raster.p[1] += offset_view;
-                tri_raster.p[2] += offset_view;
-                    
-                pge.fill_triangle(tri_raster.p[0].x as i32, tri_raster.p[0].y as i32, 
-                    tri_raster.p[1].x as i32, tri_raster.p[1].y as i32,
-                    tri_raster.p[2].x as i32, tri_raster.p[2].y as i32, 
-                    &tri_raster.col);
+                // Clip against viewport in screen space
+				// Clip triangles against all four screen edges, this could yield
+				// a bunch of triangles, so create a queue that we traverse to 
+				//  ensure we only test new triangles generated against planes
+                // Add initial triangle
+                let mut view_clipped_tris = vec!(tri_projected);
+                for p in 0..4 {
+                    if let Some(tri_to_clip) = view_clipped_tris.pop() {
+                        // Clip it against a plane. We only need to test each 
+                        // subsequent plane, against subsequent new triangles
+                        // as all triangles after a plane clip are guaranteed
+                        // to lie on the inside of the plane. I like how this
+                        // comment is almost completely and utterly justified
+                        let mut clipped = match p {
+                            0 => { tri_to_clip.clip_against_plane(&Plane { position: Vec4d{x: 0.0, y:-1.0, z:0.0, w:1.0}, normal: Vec4d{x: 0.0, y:1.0, z:0.0, w:1.0} }) },
+                            1 => { tri_to_clip.clip_against_plane(&Plane { position: Vec4d{x: 0.0, y:1.0, z:0.0, w:1.0}, normal: Vec4d{x: 0.0, y:-1.0, z:0.0, w:1.0} }) },
+                            2 => { tri_to_clip.clip_against_plane(&Plane { position: Vec4d{x: 1.0, y:0.0, z:0.0, w:1.0}, normal: Vec4d{x: -1.0, y:0.0, z:0.0, w:1.0} }) },
+                            3 => { tri_to_clip.clip_against_plane(&Plane { position: Vec4d{x: -1.0, y:0.0, z:0.0, w:1.0}, normal: Vec4d{x: 1.0, y:0.0, z:0.0, w:1.0} }) },
+                            _ => { panic!() }
+                        };
 
-                pge.draw_triangle(tri_raster.p[0].x as i32, tri_raster.p[0].y as i32, 
-                    tri_raster.p[1].x as i32, tri_raster.p[1].y as i32,
-                    tri_raster.p[2].x as i32, tri_raster.p[2].y as i32, 
-                    &Pixel::rgb(255, 255, 255));
+                        for t in clipped {
+                            view_clipped_tris.push(t);
+                        }
+                    }
+                }
+
+                for mut tri_raster in view_clipped_tris {
+                    // Scale to viewport
+                    tri_raster.col = tri_projected.col;
+
+                    let mut offset_view = Vec4d { x:1.0,y:1.0,z:0.0, w:1.0 };
+                    tri_raster.p[0] += offset_view;
+                    tri_raster.p[1] += offset_view;
+                    tri_raster.p[2] += offset_view;
+                    tri_raster.p[0].x *= 0.5 * self.view_w;
+                    tri_raster.p[0].y *= 0.5 * self.view_h;
+                    tri_raster.p[1].x *= 0.5 * self.view_w;
+                    tri_raster.p[1].y *= 0.5 * self.view_h;
+                    tri_raster.p[2].x *= 0.5 * self.view_w;
+                    tri_raster.p[2].y *= 0.5 * self.view_h;
+                    offset_view = Vec4d { x:self.view_x, y:self.view_y,z:0.0, w:1.0 };
+                    tri_raster.p[0] += offset_view;
+                    tri_raster.p[1] += offset_view;
+                    tri_raster.p[2] += offset_view;
+                        
+                    pge.fill_triangle(tri_raster.p[0].x as i32, tri_raster.p[0].y as i32, 
+                        tri_raster.p[1].x as i32, tri_raster.p[1].y as i32,
+                        tri_raster.p[2].x as i32, tri_raster.p[2].y as i32, 
+                        &tri_raster.col);
+
+                    pge.draw_triangle(tri_raster.p[0].x as i32, tri_raster.p[0].y as i32, 
+                        tri_raster.p[1].x as i32, tri_raster.p[1].y as i32,
+                        tri_raster.p[2].x as i32, tri_raster.p[2].y as i32, 
+                        &Pixel::rgb(255, 255, 255));
+                }
             }
         }
     }
