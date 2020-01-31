@@ -2,6 +2,7 @@ use super::vec3d::Vec3d;
 use super::vec4d::Vec4d;
 use std::ops::{Mul};
 
+#[derive(Debug, Clone, Copy)]
 pub struct Mat4x4 {
     pub m: [[f32; 4]; 4],
 }
@@ -80,7 +81,7 @@ impl Mat4x4 {
                 [ar * fov_rad, 0.0, 0.0, 0.0],
                 [0.0, fov_rad, 0.0, 0.0],
                 [0.0, 0.0, far / (far - near), 1.0],
-                [0.0, 0.0, (-far * near) / (far - near), 1.0],
+                [0.0, 0.0, (-far * near) / (far - near), 0.0],
             ],
         }
     }
@@ -101,7 +102,38 @@ impl Mat4x4 {
         }
     }
 
-    
+    pub fn inverse(&self) -> Mat4x4 {
+        let mut inv = Mat4x4::make_identity();
+
+		inv.m[0][0] =  self.m[1][1] * self.m[2][2] * self.m[3][3] - self.m[1][1] * self.m[2][3] * self.m[3][2] - self.m[2][1] * self.m[1][2] * self.m[3][3] + self.m[2][1] * self.m[1][3] * self.m[3][2] + self.m[3][1] * self.m[1][2] * self.m[2][3] - self.m[3][1] * self.m[1][3] * self.m[2][2];
+		inv.m[1][0] = -self.m[1][0] * self.m[2][2] * self.m[3][3] + self.m[1][0] * self.m[2][3] * self.m[3][2] + self.m[2][0] * self.m[1][2] * self.m[3][3] - self.m[2][0] * self.m[1][3] * self.m[3][2] - self.m[3][0] * self.m[1][2] * self.m[2][3] + self.m[3][0] * self.m[1][3] * self.m[2][2];
+		inv.m[2][0] =  self.m[1][0] * self.m[2][1] * self.m[3][3] - self.m[1][0] * self.m[2][3] * self.m[3][1] - self.m[2][0] * self.m[1][1] * self.m[3][3] + self.m[2][0] * self.m[1][3] * self.m[3][1] + self.m[3][0] * self.m[1][1] * self.m[2][3] - self.m[3][0] * self.m[1][3] * self.m[2][1];
+		inv.m[3][0] = -self.m[1][0] * self.m[2][1] * self.m[3][2] + self.m[1][0] * self.m[2][2] * self.m[3][1] + self.m[2][0] * self.m[1][1] * self.m[3][2] - self.m[2][0] * self.m[1][2] * self.m[3][1] - self.m[3][0] * self.m[1][1] * self.m[2][2] + self.m[3][0] * self.m[1][2] * self.m[2][1];
+		inv.m[0][1] = -self.m[0][1] * self.m[2][2] * self.m[3][3] + self.m[0][1] * self.m[2][3] * self.m[3][2] + self.m[2][1] * self.m[0][2] * self.m[3][3] - self.m[2][1] * self.m[0][3] * self.m[3][2] - self.m[3][1] * self.m[0][2] * self.m[2][3] + self.m[3][1] * self.m[0][3] * self.m[2][2];
+		inv.m[1][1] =  self.m[0][0] * self.m[2][2] * self.m[3][3] - self.m[0][0] * self.m[2][3] * self.m[3][2] - self.m[2][0] * self.m[0][2] * self.m[3][3] + self.m[2][0] * self.m[0][3] * self.m[3][2] + self.m[3][0] * self.m[0][2] * self.m[2][3] - self.m[3][0] * self.m[0][3] * self.m[2][2];
+		inv.m[2][1] = -self.m[0][0] * self.m[2][1] * self.m[3][3] + self.m[0][0] * self.m[2][3] * self.m[3][1] + self.m[2][0] * self.m[0][1] * self.m[3][3] - self.m[2][0] * self.m[0][3] * self.m[3][1] - self.m[3][0] * self.m[0][1] * self.m[2][3] + self.m[3][0] * self.m[0][3] * self.m[2][1];
+		inv.m[3][1] =  self.m[0][0] * self.m[2][1] * self.m[3][2] - self.m[0][0] * self.m[2][2] * self.m[3][1] - self.m[2][0] * self.m[0][1] * self.m[3][2] + self.m[2][0] * self.m[0][2] * self.m[3][1] + self.m[3][0] * self.m[0][1] * self.m[2][2] - self.m[3][0] * self.m[0][2] * self.m[2][1];
+		inv.m[0][2] =  self.m[0][1] * self.m[1][2] * self.m[3][3] - self.m[0][1] * self.m[1][3] * self.m[3][2] - self.m[1][1] * self.m[0][2] * self.m[3][3] + self.m[1][1] * self.m[0][3] * self.m[3][2] + self.m[3][1] * self.m[0][2] * self.m[1][3] - self.m[3][1] * self.m[0][3] * self.m[1][2];
+		inv.m[1][2] = -self.m[0][0] * self.m[1][2] * self.m[3][3] + self.m[0][0] * self.m[1][3] * self.m[3][2] + self.m[1][0] * self.m[0][2] * self.m[3][3] - self.m[1][0] * self.m[0][3] * self.m[3][2] - self.m[3][0] * self.m[0][2] * self.m[1][3] + self.m[3][0] * self.m[0][3] * self.m[1][2];
+		inv.m[2][2] =  self.m[0][0] * self.m[1][1] * self.m[3][3] - self.m[0][0] * self.m[1][3] * self.m[3][1] - self.m[1][0] * self.m[0][1] * self.m[3][3] + self.m[1][0] * self.m[0][3] * self.m[3][1] + self.m[3][0] * self.m[0][1] * self.m[1][3] - self.m[3][0] * self.m[0][3] * self.m[1][1];
+		inv.m[3][2] = -self.m[0][0] * self.m[1][1] * self.m[3][2] + self.m[0][0] * self.m[1][2] * self.m[3][1] + self.m[1][0] * self.m[0][1] * self.m[3][2] - self.m[1][0] * self.m[0][2] * self.m[3][1] - self.m[3][0] * self.m[0][1] * self.m[1][2] + self.m[3][0] * self.m[0][2] * self.m[1][1];
+		inv.m[0][3] = -self.m[0][1] * self.m[1][2] * self.m[2][3] + self.m[0][1] * self.m[1][3] * self.m[2][2] + self.m[1][1] * self.m[0][2] * self.m[2][3] - self.m[1][1] * self.m[0][3] * self.m[2][2] - self.m[2][1] * self.m[0][2] * self.m[1][3] + self.m[2][1] * self.m[0][3] * self.m[1][2];
+		inv.m[1][3] =  self.m[0][0] * self.m[1][2] * self.m[2][3] - self.m[0][0] * self.m[1][3] * self.m[2][2] - self.m[1][0] * self.m[0][2] * self.m[2][3] + self.m[1][0] * self.m[0][3] * self.m[2][2] + self.m[2][0] * self.m[0][2] * self.m[1][3] - self.m[2][0] * self.m[0][3] * self.m[1][2];
+		inv.m[2][3] = -self.m[0][0] * self.m[1][1] * self.m[2][3] + self.m[0][0] * self.m[1][3] * self.m[2][1] + self.m[1][0] * self.m[0][1] * self.m[2][3] - self.m[1][0] * self.m[0][3] * self.m[2][1] - self.m[2][0] * self.m[0][1] * self.m[1][3] + self.m[2][0] * self.m[0][3] * self.m[1][1];
+		inv.m[3][3] =  self.m[0][0] * self.m[1][1] * self.m[2][2] - self.m[0][0] * self.m[1][2] * self.m[2][1] - self.m[1][0] * self.m[0][1] * self.m[2][2] + self.m[1][0] * self.m[0][2] * self.m[2][1] + self.m[2][0] * self.m[0][1] * self.m[1][2] - self.m[2][0] * self.m[0][2] * self.m[1][1];
+
+		let mut det = self.m[0][0] * inv.m[0][0] + self.m[0][1] * inv.m[1][0] + self.m[0][2] * inv.m[2][0] + self.m[0][3] * inv.m[3][0];
+
+		det = 1.0 / det;
+
+        for i in 0..4 {
+            for j in 0..4 {
+                inv.m[i][j] *= det;
+            }
+        }
+
+		return inv;
+    }
 }
 
 impl Mul<Vec4d> for Mat4x4 {

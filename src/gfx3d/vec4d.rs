@@ -1,3 +1,4 @@
+use crate::gfx3d::vec3d::Vec3d;
 use std::ops::{Add, Sub, Mul, Div, AddAssign, SubAssign, MulAssign, DivAssign};
 
 #[derive(Debug, Clone, Copy)]
@@ -37,6 +38,10 @@ impl Vec4d {
             z: self.x * rhs.y - self.y * rhs.x,
             w: 1.0
         }
+    }
+
+    pub fn as_vec3d(&self) -> Vec3d {
+        Vec3d { x: self.x, y: self.y, z: self.z }
     }
 }
 

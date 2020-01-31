@@ -1,34 +1,34 @@
 use crate::{Pixel};
-use super::super::gfx2d::vec2d::Vec2d;
 use super::vec3d::Vec3d;
-//use super::vec4d::Vec4d;
+use super::vec4d::Vec4d;
 use super::plane::Plane;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Triangle {
-    pub p: [Vec3d; 3],
-    pub t: [Vec2d; 3],
+    pub p: [Vec4d; 3], 
+    pub t: [Vec3d; 3],
     pub col: Pixel,
 }
 
 impl Triangle {
 
     pub fn new() -> Self {
-        Triangle { p: [Vec3d::zero(); 3], t: [Vec2d::zero(); 3], col: Pixel::rgb(0, 0, 0) }
+        Triangle { p: [Vec4d::zero(); 3], t: [Vec3d::zero(); 3], col: Pixel::rgb(0, 0, 0) }
     }
+    
     // TODO - not sure if I like returning a vec over a tuple?
     pub fn clip_against_plane(&self, plane: &Plane) -> Option<Vec<Triangle>> {
         let pn = plane.normal.norm();
 
-        let mut inside_points: [Vec3d; 3] = [Vec3d::zero(); 3];
-        let mut outside_points: [Vec3d; 3] = [Vec3d::zero(); 3];
-        let mut inside_tex: [Vec2d; 3] = [Vec2d::zero(); 3];
-        let mut outside_tex: [Vec2d; 3] = [Vec2d::zero(); 3];
+        let mut inside_points: [Vec4d; 3] = [Vec4d::zero(); 3];
+        let mut outside_points: [Vec4d; 3] = [Vec4d::zero(); 3];
+        let mut inside_tex: [Vec3d; 3] = [Vec3d::zero(); 3];
+        let mut outside_tex: [Vec3d; 3] = [Vec3d::zero(); 3];
 
         let mut inside_count = 0;
         let mut outside_count = 0;
 
-        let dist = |p: &Vec3d| -> f32 { 
+        let dist = |p: &Vec4d| -> f32 { 
             //let n = p.norm(); // TODO - needed?????
             pn.dot(p) - pn.dot(&plane.position)
         };
@@ -91,8 +91,8 @@ impl Triangle {
                 new_tri.p[1] = a.0;
                 new_tri.p[2] = b.0;
 
-                new_tri.t[1] = (outside_points[0] - inside_points[0]).as_vec2d() + inside_tex[0] * a.1;
-                new_tri.t[2] = (outside_points[1] - inside_points[0]).as_vec2d() + inside_tex[0] * b.1;
+                new_tri.t[1] = (outside_points[0] - inside_points[0]).as_vec3d() + inside_tex[0] * a.1;
+                new_tri.t[2] = (outside_points[1] - inside_points[0]).as_vec3d() + inside_tex[0] * b.1;
 
                 Some(vec!(new_tri))
             },
@@ -112,7 +112,7 @@ impl Triangle {
 
                 let a = plane.line_intersect_plane(inside_points[0], outside_points[0]);
                 new_tri_a.p[1] = a.0;
-                new_tri_a.t[1] = (outside_points[0] - inside_points[0]).as_vec2d() + inside_tex[0] * a.1;
+                new_tri_a.t[1] = (outside_points[0] - inside_points[0]).as_vec3d() + inside_tex[0] * a.1;
 
                 // The second triangle is composed of one of he inside points, a
                 // new point determined by the intersection of the other side of the 
@@ -124,7 +124,7 @@ impl Triangle {
 
                 let b = plane.line_intersect_plane(inside_points[1], outside_points[0]);
                 new_tri_b.p[2] = b.0;
-                new_tri_b.t[2] = (outside_points[0] - inside_points[1]).as_vec2d() + inside_tex[1] * b.1;
+                new_tri_b.t[2] = (outside_points[0] - inside_points[1]).as_vec3d() + inside_tex[1] * b.1;
 
                 Some(vec!(new_tri_a, new_tri_b))
             },

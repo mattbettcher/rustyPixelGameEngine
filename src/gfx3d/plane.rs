@@ -1,13 +1,14 @@
 use super::vec3d::Vec3d;
+use super::vec4d::Vec4d;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Plane {
-    pub position: Vec3d,
-    pub normal: Vec3d,
+    pub position: Vec4d,
+    pub normal: Vec4d,
 }
 
 impl Plane {
-    pub fn line_intersect_plane(&self, start: Vec3d, end: Vec3d) -> (Vec3d, f32) {
+    pub fn line_intersect_plane(&self, start: Vec4d, end: Vec4d) -> (Vec4d, f32) {
         let n = self.normal.norm();
         let d = -n.dot(&self.position);
         let ad = start.dot(&n);
