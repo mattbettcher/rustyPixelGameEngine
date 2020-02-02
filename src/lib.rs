@@ -7,6 +7,7 @@ use std::mem;
 use std::cmp;
 
 pub mod time;
+pub mod color;
 pub mod gfx2d;
 pub mod gfx3d;
 
@@ -121,12 +122,33 @@ impl Sprite {
             self.data[(y * self.width as i32 + x) as usize] = p.clone();
         }
     }
-    
+
     #[inline]
     pub fn sample(&self, x: f32, y: f32) -> Pixel {
         let sx = (x * self.width as f32) as i32;
         let sy = (y * self.height as f32) as i32;
         self.get_pixel(sx, sy)
+    }
+
+    #[inline]
+    pub fn sample_bl(&self, mut u: f32, mut v: f32) -> Pixel {
+        u = u * self.width as f32 - 0.5;
+		v = v * self.height as f32 - 0.5;
+		let x = u.floor() as i32; // cast to int rounds toward zero, not downward
+		let y = v.floor() as i32; // Thanks @joshinils
+		let u_ratio = u - x as f32;
+		let v_ratio = v - y as f32;
+		let u_opposite = 1.0 - u_ratio;
+		let v_opposite = 1.0 - v_ratio;
+
+		let p1 = self.get_pixel(x.max(0), y.max(0));
+		let p2 = self.get_pixel((x+1).min(self.width as i32 - 1), y.max(0));
+		let p3 = self.get_pixel(x.max(0), (y+1).min(self.height as i32 - 1));
+		let p4 = self.get_pixel((x+1).min(self.width as i32 - 1), (y+1).min(self.height as i32 - 1));
+
+		Pixel::rgb(((p1.r as f32 * u_opposite + p2.r as f32 * u_ratio) * v_opposite + (p3.r as f32 * u_opposite + p4.r as f32 * u_ratio) * v_ratio) as u8,
+			       ((p1.g as f32 * u_opposite + p2.g as f32 * u_ratio) * v_opposite + (p3.g as f32 * u_opposite + p4.g as f32 * u_ratio) * v_ratio) as u8,
+                   ((p1.b as f32 * u_opposite + p2.b as f32 * u_ratio) * v_opposite + (p3.b as f32 * u_opposite + p4.b as f32 * u_ratio) * v_ratio) as u8)
     }
 
     pub fn get_data(&self) -> &[Pixel] {
@@ -232,7 +254,7 @@ impl PGE {
             // Handle User Input - Keyboard
             let mut new_key_state: [bool; 256] = [false; 256];
             if let Some(win) = &mut self.window { 
-                let keys = win.get_keys_pressed(KeyRepeat::No).unwrap();
+                let keys = win.get_keys_pressed(KeyRepeat::Yes).unwrap();
                 for key in keys {
                     new_key_state[key as usize] = true;
                 }

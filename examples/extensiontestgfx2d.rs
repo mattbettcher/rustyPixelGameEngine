@@ -64,7 +64,8 @@ impl State for GameState {
 		if pge.get_mouse(2).pressed  { add_event("Mouse Button 2 Down".to_owned());} 
 		if pge.get_mouse(2).released { add_event("Mouse Button 2 Up".to_owned());}
 
-		if pge.get_key(Key::A).pressed { add_event("A key Down".to_owned());} 
+		if pge.get_key(Key::A).pressed { add_event("A key Pressed".to_owned());} 
+		if pge.get_key(Key::A).held { add_event("A key Held".to_owned());} 
 		if pge.get_key(Key::A).released { add_event("A key Up".to_owned());} 
 
 		// Draw Event Log

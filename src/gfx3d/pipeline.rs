@@ -1,3 +1,4 @@
+use crate::color::Color;
 use crate::WHITE;
 use crate::gfx3d::plane::Plane;
 use crate::gfx3d::vec4d::Vec4d;
@@ -192,6 +193,226 @@ impl Pipeline {
         }
     }
 
+    // c1-c3 is the color for each point
+    pub fn shaded_textured_triangle(&mut self, pge: &mut PGE, mut x1: i32, mut y1: i32, mut u1: f32, mut v1: f32, mut w1: f32, mut c1: Color,
+        mut x2: i32, mut y2: i32, mut u2: f32, mut v2: f32, mut w2: f32, mut c2: Color,
+        mut x3: i32, mut y3: i32, mut u3: f32, mut v3: f32, mut w3: f32, mut c3: Color, tex: &Sprite) {
+        if y2 < y1
+		{
+			std::mem::swap(&mut y1, &mut y2);
+			std::mem::swap(&mut x1, &mut x2);
+			std::mem::swap(&mut u1, &mut u2);
+			std::mem::swap(&mut v1, &mut v2);
+            std::mem::swap(&mut w1, &mut w2);
+            std::mem::swap(&mut c1, &mut c2);
+		}
+		if y3 < y1
+		{
+			std::mem::swap(&mut y1, &mut y3);
+			std::mem::swap(&mut x1, &mut x3);
+			std::mem::swap(&mut u1, &mut u3);
+			std::mem::swap(&mut v1, &mut v3);
+            std::mem::swap(&mut w1, &mut w3);
+            std::mem::swap(&mut c1, &mut c3);
+		}
+		if y3 < y2
+		{
+			std::mem::swap(&mut y2, &mut y3);
+			std::mem::swap(&mut x2, &mut x3);
+			std::mem::swap(&mut u2, &mut u3);
+			std::mem::swap(&mut v2, &mut v3);
+            std::mem::swap(&mut w2, &mut w3);
+            std::mem::swap(&mut c2, &mut c3);
+		}
+
+		let mut dy1 = y2 - y1;
+		let mut dx1 = x2 - x1;
+		let mut dv1 = v2 - v1;
+		let mut du1 = u2 - u1;
+        let mut dw1 = w2 - w1;
+        let mut dc1 = c2 - c1;
+
+		let dy2 = y3 - y1;
+		let dx2 = x3 - x1;
+		let dv2 = v3 - v1;
+		let du2 = u3 - u1;
+        let dw2 = w3 - w1;
+        let dc2 = c3 - c1;
+
+        let mut tex_u: f32;
+        let mut tex_v: f32; 
+        let mut tex_w: f32;
+        let mut col_r: f32;
+        let mut col_g: f32;
+        let mut col_b: f32;
+        let mut col_a: f32;
+
+		let mut dax_step = 0.0; 
+        let mut du1_step = 0.0; 
+        let mut du2_step = 0.0; 
+        let mut dw1_step = 0.0; 
+        let mut dc1r_step = 0.0;
+        let mut dc1g_step = 0.0;
+        let mut dc1b_step = 0.0;
+        let mut dc1a_step = 0.0;
+        let mut dbx_step = 0.0;
+        let mut dv1_step = 0.0;
+        let mut dv2_step = 0.0;
+        let mut dw2_step = 0.0;
+        let mut dc2r_step = 0.0;
+        let mut dc2g_step = 0.0;
+        let mut dc2b_step = 0.0;
+        let mut dc2a_step = 0.0;
+
+		if dy1 > 0 {
+            dax_step = dx1 as f32 / dy1.abs() as f32;
+		    du1_step = du1 / dy1.abs() as f32;
+		    dv1_step = dv1 / dy1.abs() as f32;
+            dw1_step = dw1 / dy1.abs() as f32;
+            dc1r_step = dc1.r / dy1.abs() as f32;
+            dc1g_step = dc1.g / dy1.abs() as f32;
+            dc1b_step = dc1.b / dy1.abs() as f32;
+            dc1a_step = dc1.a / dy1.abs() as f32;
+        }
+
+		if dy2 > 0 {
+            dbx_step = dx2 as f32 / dy2.abs() as f32;
+            du2_step = du2 / dy2.abs() as f32;
+		    dv2_step = dv2 / dy2.abs() as f32;
+            dw2_step = dw2 / dy2.abs() as f32;
+            dc2r_step = dc2.r / dy2.abs() as f32;
+            dc2g_step = dc2.g / dy2.abs() as f32;
+            dc2b_step = dc2.b / dy2.abs() as f32;
+            dc2a_step = dc2.a / dy2.abs() as f32;
+        }
+
+		if dy1 > 0 {
+            for i in y1..y2 {
+				let mut ax = x1 + ((i - y1) as f32 * dax_step) as i32;
+				let mut bx = x1 + ((i - y1) as f32 * dbx_step) as i32;
+
+				let mut tex_su = u1 + (i - y1) as f32 * du1_step;
+				let mut tex_sv = v1 + (i - y1) as f32 * dv1_step;
+				let mut tex_sw = w1 + (i - y1) as f32 * dw1_step;
+				let mut col_sr = c1.r + (i - y1) as f32 * dc1r_step;
+				let mut col_sg = c1.g + (i - y1) as f32 * dc1g_step;
+				let mut col_sb = c1.b + (i - y1) as f32 * dc1b_step;
+				let mut col_sa = c1.a + (i - y1) as f32 * dc1a_step;
+
+				let mut tex_eu = u1 + (i - y1) as f32 * du2_step;
+				let mut tex_ev = v1 + (i - y1) as f32 * dv2_step;
+                let mut tex_ew = w1 + (i - y1) as f32 * dw2_step;
+                let mut col_er = c1.r + (i - y1) as f32 * dc2r_step;
+				let mut col_eg = c1.g + (i - y1) as f32 * dc2g_step;
+				let mut col_eb = c1.b + (i - y1) as f32 * dc2b_step;
+				let mut col_ea = c1.a + (i - y1) as f32 * dc2a_step;
+
+				if ax > bx {
+					std::mem::swap(&mut ax, &mut bx);
+					std::mem::swap(&mut tex_su, &mut tex_eu);
+					std::mem::swap(&mut tex_sv, &mut tex_ev);
+					std::mem::swap(&mut tex_sw, &mut tex_ew);
+					std::mem::swap(&mut col_sr, &mut col_er);
+					std::mem::swap(&mut col_sg, &mut col_eg);
+					std::mem::swap(&mut col_sb, &mut col_eb);
+					std::mem::swap(&mut col_sa, &mut col_ea);
+				}
+
+				let tstep = 1.0 / (bx - ax) as f32;
+				let mut t = 0.0;
+
+                for j in ax..bx {
+					tex_u = (1.0 - t) * tex_su + t * tex_eu;
+					tex_v = (1.0 - t) * tex_sv + t * tex_ev;
+					tex_w = (1.0 - t) * tex_sw + t * tex_ew;
+					col_r = (1.0 - t) * col_sr + t * col_er;
+					col_g = (1.0 - t) * col_sg + t * col_eg;
+					col_b = (1.0 - t) * col_sb + t * col_eb;
+                    col_a = (1.0 - t) * col_sa + t * col_ea;
+                    // TODO - use interpolated color!!!!
+					if tex_w > self.depth_buffer[(i * pge.screen_width + j) as usize] {
+						pge.draw(j, i, &tex.sample(tex_u / tex_w, tex_v / tex_w));
+                        self.depth_buffer[(i * pge.screen_width + j) as usize] = tex_w;
+					}
+					t += tstep;
+				}
+
+			}
+		}
+
+		dy1 = y3 - y2;
+		dx1 = x3 - x2;
+		dv1 = v3 - v2;
+		du1 = u3 - u2;
+		dw1 = w3 - w2;
+		dc1 = c3 - c2;
+
+		if dy1 > 0 { dax_step = dx1 as f32 / dy1.abs() as f32; }
+		if dy2 > 0 { dbx_step = dx2 as f32 / dy2.abs() as f32; }
+
+        du1_step = 0.0;
+        dv1_step = 0.0;
+		if dy1 > 0 {
+            du1_step = du1 / dy1.abs() as f32;
+		    dv1_step = dv1 / dy1.abs() as f32;
+            dw1_step = dw1 / dy1.abs() as f32;
+        }
+
+		if dy1 > 0 {
+            for i in y2..y3 {
+				let mut ax = x2 + ((i - y2) as f32 * dax_step) as i32;
+				let mut bx = x1 + ((i - y1) as f32 * dbx_step) as i32;
+
+				let mut tex_su = u2 + (i - y2) as f32 * du1_step;
+				let mut tex_sv = v2 + (i - y2) as f32 * dv1_step;
+                let mut tex_sw = w2 + (i - y2) as f32 * dw1_step;
+                let mut col_sr = c2.r + (i - y2) as f32 * dc1r_step;
+				let mut col_sg = c2.g + (i - y2) as f32 * dc1g_step;
+				let mut col_sb = c2.b + (i - y2) as f32 * dc1b_step;
+				let mut col_sa = c2.a + (i - y2) as f32 * dc1a_step;
+
+				let mut tex_eu = u1 + (i - y1) as f32 * du2_step;
+				let mut tex_ev = v1 + (i - y1) as f32 * dv2_step;
+                let mut tex_ew = w1 + (i - y1) as f32 * dw2_step;
+                let mut col_er = c1.r + (i - y1) as f32 * dc2r_step;
+				let mut col_eg = c1.g + (i - y1) as f32 * dc2g_step;
+				let mut col_eb = c1.b + (i - y1) as f32 * dc2b_step;
+				let mut col_ea = c1.a + (i - y1) as f32 * dc2a_step;
+
+				if ax > bx {
+					std::mem::swap(&mut ax, &mut bx);
+					std::mem::swap(&mut tex_su, &mut tex_eu);
+					std::mem::swap(&mut tex_sv, &mut tex_ev);
+                    std::mem::swap(&mut tex_sw, &mut tex_ew);
+                    std::mem::swap(&mut col_sr, &mut col_er);
+					std::mem::swap(&mut col_sg, &mut col_eg);
+					std::mem::swap(&mut col_sb, &mut col_eb);
+					std::mem::swap(&mut col_sa, &mut col_ea);
+				}
+
+				let tstep = 1.0 / (bx - ax) as f32;
+				let mut t = 0.0;
+
+                for j in ax..bx {
+					tex_u = (1.0 - t) * tex_su + t * tex_eu;
+					tex_v = (1.0 - t) * tex_sv + t * tex_ev;
+                    tex_w = (1.0 - t) * tex_sw + t * tex_ew;
+                    col_r = (1.0 - t) * col_sr + t * col_er;
+					col_g = (1.0 - t) * col_sg + t * col_eg;
+					col_b = (1.0 - t) * col_sb + t * col_eb;
+                    col_a = (1.0 - t) * col_sa + t * col_ea;
+                    // TODO - use interpolated color!!!!
+
+                    if tex_w > self.depth_buffer[(i * pge.screen_width + j) as usize] {
+						pge.draw(j, i, &tex.sample(tex_u / tex_w, tex_v / tex_w));
+						self.depth_buffer[(i * pge.screen_width + j) as usize] = tex_w;
+					}
+					t += tstep;
+				}
+			}
+		}
+    }
+
     pub fn textured_triangle(&mut self, pge: &mut PGE, mut x1: i32, mut y1: i32, mut u1: f32, mut v1: f32, mut w1: f32,
         mut x2: i32, mut y2: i32, mut u2: f32, mut v2: f32, mut w2: f32,
         mut x3: i32, mut y3: i32, mut u3: f32, mut v3: f32, mut w3: f32, tex: &Sprite) {
@@ -260,7 +481,7 @@ impl Pipeline {
         }
 
 		if dy1 > 0 {
-            for i in y1..=y2 {
+            for i in y1..y2 {
 				let mut ax = x1 + ((i - y1) as f32 * dax_step) as i32;
 				let mut bx = x1 + ((i - y1) as f32 * dbx_step) as i32;
 
@@ -286,10 +507,13 @@ impl Pipeline {
 					tex_u = (1.0 - t) * tex_su + t * tex_eu;
 					tex_v = (1.0 - t) * tex_sv + t * tex_ev;
 					tex_w = (1.0 - t) * tex_sw + t * tex_ew;
-					if tex_w > self.depth_buffer[(i * pge.screen_width + j) as usize] {
-						pge.draw(j, i, &tex.sample(tex_u / tex_w, tex_v / tex_w));
-                        self.depth_buffer[(i * pge.screen_width + j) as usize] = tex_w;
-					}
+					let index = (i * pge.screen_width + j) as usize;
+                    if index < self.depth_buffer.len() {
+                        if tex_w > self.depth_buffer[index] {
+                            pge.draw(j, i, &tex.sample_bl(tex_u / tex_w, tex_v / tex_w));
+                            self.depth_buffer[index] = tex_w;
+                        }
+                    }
 					t += tstep;
 				}
 
@@ -314,7 +538,7 @@ impl Pipeline {
         }
 
 		if dy1 > 0 {
-            for i in y2..=y3 {
+            for i in y2..y3 {
 				let mut ax = x2 + ((i - y2) as f32 * dax_step) as i32;
 				let mut bx = x1 + ((i - y1) as f32 * dbx_step) as i32;
 
@@ -341,10 +565,13 @@ impl Pipeline {
 					tex_v = (1.0 - t) * tex_sv + t * tex_ev;
 					tex_w = (1.0 - t) * tex_sw + t * tex_ew;
 
-                    if tex_w > self.depth_buffer[(i * pge.screen_width + j) as usize] {
-						pge.draw(j, i, &tex.sample(tex_u / tex_w, tex_v / tex_w));
-						self.depth_buffer[(i * pge.screen_width + j) as usize] = tex_w;
-					}
+                    let index = (i * pge.screen_width + j) as usize;
+                    if index < self.depth_buffer.len() {
+                        if tex_w > self.depth_buffer[index] {
+                            pge.draw(j, i, &tex.sample_bl(tex_u / tex_w, tex_v / tex_w));
+                            self.depth_buffer[index] = tex_w;
+                        }
+                    }
 					t += tstep;
 				}
 			}

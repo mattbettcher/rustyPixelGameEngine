@@ -136,6 +136,19 @@ impl Mat4x4 {
     }
 }
 
+impl Mul<Vec3d> for Mat4x4 {
+    type Output = Vec3d;
+
+    fn mul(self, rhs: Vec3d) -> Vec3d {
+        Vec3d {
+            x: rhs.x * self.m[0][0] + rhs.y * self.m[1][0] + rhs.z * self.m[2][0] + 1.0 * self.m[3][0],
+            y: rhs.x * self.m[0][1] + rhs.y * self.m[1][1] + rhs.z * self.m[2][1] + 1.0 * self.m[3][1],
+            z: rhs.x * self.m[0][2] + rhs.y * self.m[1][2] + rhs.z * self.m[2][2] + 1.0 * self.m[3][2],
+            //w: rhs.x * self.m[0][3] + rhs.y * self.m[1][3] + rhs.z * self.m[2][3] + 1.0 * self.m[3][3],
+        }
+    }
+}
+
 impl Mul<Vec4d> for Mat4x4 {
     type Output = Vec4d;
 
