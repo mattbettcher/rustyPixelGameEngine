@@ -41,11 +41,13 @@ impl State for GameState {
         if pge.get_key(Key::W).held { self.camera = self.camera + forward; }
         if pge.get_key(Key::S).held { self.camera = self.camera - forward; }
 
-        if pge.get_key(Key::A).held { self.yaw -= 8.0 * dt; }
-        if pge.get_key(Key::D).held { self.yaw += 8.0 * dt; }
+        if pge.get_key(Key::A).held { self.yaw += 8.0 * dt; }
+        if pge.get_key(Key::D).held { self.yaw -= 8.0 * dt; }
+
+        self.theta += 0.5 * dt;
 
         let rot_z = Mat4x4::make_rotation_z(self.theta * 0.5);
-        let rot_x = Mat4x4::make_rotation_x(self.yaw);
+        let rot_x = Mat4x4::make_rotation_x(self.theta);
         let translate = Mat4x4::make_translation(0.0, 0.0, 0.0);
 
         let world = rot_z * rot_x * translate;
@@ -54,7 +56,7 @@ impl State for GameState {
         let mut target = Vec3d {x: 0.0, y: 0.0, z:1.0 };
         let cam_rot = Mat4x4::make_rotation_y(self.yaw);
         self.look_dir = cam_rot * target;
-        target += self.camera;
+        target = self.camera + self.look_dir;
         self.pipeline.set_camera(self.camera, target, up);
         self.pipeline.set_projection(80.0, pge.screen_height as f32 / pge.screen_width as f32, 0.01, 1000.0, 0.0, 0.0, pge.screen_width as f32, pge.screen_height as f32);
         self.pipeline.set_transform(world);
@@ -118,20 +120,8 @@ impl State for GameState {
                     }
         };
 
-        for z in 0..1 {
-            for y in 0..1 {
-                for x in 0..1 {
-                    /*self.pipeline.set_transform(Mat4x4::make_scale(0.85, 0.85, 0.85) * 
-                        Mat4x4::make_translation(-0.5, -0.5, -0.5) * 
-                        Mat4x4::make_translation(x as f32 - 2.0, y as f32 - 2.0, z as f32 - 2.0) *
-                        Mat4x4::make_rotation_z(self.time * 0.5) * 
-                        Mat4x4::make_rotation_y(self.time * 0.5) * 
-                        Mat4x4::make_rotation_x(self.time * 0.5)
-                    );*/
-                    self.pipeline.render(pge, &cube, &self.tex);
-                }
-            }
-        }
+        
+        self.pipeline.render(pge, &cube, &self.tex);
 
         true
     }

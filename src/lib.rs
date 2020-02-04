@@ -169,8 +169,8 @@ pub trait State {
 
 pub struct PGE {
     app_name: String,
-    draw_target: Vec<Sprite>,
-    current_draw_target: usize,
+    pub draw_target: Vec<Sprite>,
+    pub current_draw_target: usize,
     window: Option<Window>,
     current_mouse_state: Vec<HWButton>,
     current_key_state: Vec<HWButton>,
@@ -237,7 +237,8 @@ impl PGE {
                                 .unwrap_or_else(|e| {panic!("{}", e)}));
 
         if let Some(win) = &mut self.window {
-            win.limit_update_rate(None);//Some(std::time::Duration::from_millis(16)));
+            win.limit_update_rate(None);
+            //win.limit_update_rate(Some(std::time::Duration::from_millis(2)));
         }
         if !state.on_user_create() {
             self.active = false;
@@ -268,9 +269,7 @@ impl PGE {
                     if new_key_state[i] {
                         self.current_key_state[i].pressed = !self.current_key_state[i].held;
                         self.current_key_state[i].held = true;
-                    }
-                    else
-                    {
+                    } else {
                         self.current_key_state[i].released = true;
                         self.current_key_state[i].held = false;
                     }

@@ -7,6 +7,7 @@ use crate::gfx3d::triangle::Triangle;
 use crate::Sprite;
 use super::vec3d::Vec3d;
 use super::mat4x4::Mat4x4;
+use std::cmp::{max, min};
 
 pub enum RenderOptions {
     Wire, Flat, Textured,
@@ -177,10 +178,13 @@ impl Pipeline {
                     
                     //tri_raster.draw_tex(pge, &tex);
 
-                    self.textured_triangle(pge, tri_raster.p[0].x as i32, tri_raster.p[0].y as i32, tri_raster.t[0].x, tri_raster.t[0].y, tri_raster.t[0].z, 
-                        tri_raster.p[1].x as i32, tri_raster.p[1].y as i32, tri_raster.t[1].x, tri_raster.t[1].y, tri_raster.t[1].z, 
-                        tri_raster.p[2].x as i32, tri_raster.p[2].y as i32, tri_raster.t[2].x, tri_raster.t[2].y, tri_raster.t[2].z, 
-                        &tex);
+                    //self.textured_triangle(pge, tri_raster.p[0].x as i32, tri_raster.p[0].y as i32, tri_raster.t[0].x, tri_raster.t[0].y, tri_raster.t[0].z, 
+                    //    tri_raster.p[1].x as i32, tri_raster.p[1].y as i32, tri_raster.t[1].x, tri_raster.t[1].y, tri_raster.t[1].z, 
+                    //    tri_raster.p[2].x as i32, tri_raster.p[2].y as i32, tri_raster.t[2].x, tri_raster.t[2].y, tri_raster.t[2].z, 
+                    //    &tex);
+
+                    self.render_triangle_texture(pge, &tri_raster.p[0], &tri_raster.p[1], &tri_raster.p[2],
+                        &tri_raster.t[0], &tri_raster.t[1], &tri_raster.t[2], &tex);
                         
                     tri_count += 1;
 
@@ -413,6 +417,162 @@ impl Pipeline {
 		}
     }
 
+    pub fn render_triangle_texture(&mut self, pge: &mut PGE, a: &Vec4d, b: &Vec4d, c: &Vec4d, 
+        auv: &Vec3d, buv: &Vec3d, cuv: &Vec3d,
+        tex: &Sprite) {
+        // algorithm only fills counter clockwise triangles, so swap as needed
+        // For a triangle A B C, you can find the winding by computing the cross product (B - A) x (C - A). For 2d tri's, with z=0, it will only have a z component.
+        // To give all the same winding, swap vertices C and B if this z component is negative.
+        let cross = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y); 
+        let v0 = a;
+        let mut v1 = b;
+        let mut v2 = c;
+        let v0uv = auv;
+        let mut v1uv = buv;
+        let mut v2uv = cuv;
+        if cross > 0.0 { 
+            std::mem::swap(&mut v1, &mut v2);
+            std::mem::swap(&mut v1uv, &mut v2uv);
+        }
+
+        // use fixed-point only for X and Y.  Avoid work for Z and W.
+        let fxPtX0 = (v0.x + 0.5) as i32;
+        let fxPtX1 = (v1.x + 0.5) as i32;
+        let fxPtX2 = (v2.x + 0.5) as i32;
+        let fxPtY0 = (v0.y + 0.5) as i32;
+        let fxPtY1 = (v1.y + 0.5) as i32;
+        let fxPtY2 = (v2.y + 0.5) as i32;
+        let Z0 = v0.z;
+        let mut Z1 = v1.z;
+        let mut Z2 = v2.z;
+
+        // texture space
+        let t0u = v0uv.x;
+        let mut t1u = v1uv.x;
+        let mut t2u = v2uv.x;
+
+        let t0v = v0uv.y;
+        let mut t1v = v1uv.y;
+        let mut t2v = v2uv.y;
+
+        let t0z = v0uv.z;
+        let mut t1z = v1uv.z;
+        let mut t2z = v2uv.z;
+
+        // Fab(x, y) =     Ax       +       By     +      C              = 0
+        // Fab(x, y) = (ya - yb)x   +   (xb - xa)y + (xa * yb - xb * ya) = 0
+        // Compute A = (ya - yb) for the 3 line segments that make up each triangle
+        let A0 = fxPtY1 - fxPtY2;
+        let A1 = fxPtY2 - fxPtY0;
+        let A2 = fxPtY0 - fxPtY1;
+
+        // Compute B = (xb - xa) for the 3 line segments that make up each triangle
+        let B0 = fxPtX2 - fxPtX1;
+        let B1 = fxPtX0 - fxPtX2;
+        let B2 = fxPtX1 - fxPtX0;
+
+        // Compute C = (xa * yb - xb * ya) for the 3 line segments that make up each triangle
+        let C0 = fxPtX1 * fxPtY2 - fxPtX2 * fxPtY1;
+        let C1 = fxPtX2 * fxPtY0 - fxPtX0 * fxPtY2;
+        let C2 = fxPtX0 * fxPtY1 - fxPtX1 * fxPtY0;
+
+        // Determine edges
+        let is_top_left = |v0: &Vec4d, v1: &Vec4d| -> bool {
+            v0.y > v1.y
+        };
+
+        // We follow fill rules and add a bias
+        let bias0 = if is_top_left(v1, v2) { 0 } else { -1 };
+        let bias1 = if is_top_left(v2, v0) { 0 } else { -1 };
+        let bias2 = if is_top_left(v0, v1) { 0 } else { -1 };
+
+        // Compute triangle area
+        let tri_area = (fxPtX1 - fxPtX0) * (fxPtY2 - fxPtY0) - (fxPtX0 - fxPtX2) * (fxPtY0 - fxPtY1);
+        let one_over_tri_area = 1.0 / tri_area as f32;
+
+        Z1 = (Z1 - Z0) * one_over_tri_area;
+        Z2 = (Z2 - Z0) * one_over_tri_area;
+
+        t1u = (t1u - t0u) * one_over_tri_area;
+        t2u = (t2u - t0u) * one_over_tri_area;
+
+        t1v = (t1v - t0v) * one_over_tri_area;
+        t2v = (t2v - t0v) * one_over_tri_area;
+
+        t1z = (t1z - t0z) * one_over_tri_area;
+        t2z = (t2z - t0z) * one_over_tri_area;
+
+        // Use bounding box traversal strategy to determine which pixels to rasterize 
+        let startX = max(min(min(fxPtX0, fxPtX1), fxPtX2), 0);// & 0xFFFFFFFE;
+        let endX = min(max(max(fxPtX0, fxPtX1), fxPtX2), pge.screen_width);
+
+        let startY = max(min(min(fxPtY0, fxPtY1), fxPtY2), 0);// & 0xFFFFFFFE;
+        let endY = min(max(max(fxPtY0, fxPtY1), fxPtY2), pge.screen_height);
+
+        let mut rowIdx = startY * pge.screen_width + startX;
+        let col = startX;
+        let mut row = startY;
+
+        // Incrementally compute Fab(x, y) for all the pixels inside the bounding box formed by (startX, endX) and (startY, endY)
+        let mut alpha0 = (A0 * col) + (B0 * row) + C0 + bias0;
+        let mut beta0 = (A1 * col) + (B1 * row) + C1 + bias1;
+        let mut gama0 = (A2 * col) + (B2 * row) + C2 + bias2;
+
+        let zx = A1 as f32 * Z1 + A2 as f32 * Z2;
+
+        let tux = A1 as f32 * t1u + A2 as f32 * t2u;
+        let tvx = A1 as f32 * t1v + A2 as f32 * t2v;
+        let tz = A1 as f32 * t1z + A2 as f32 * t2z;
+
+        for _ in startY..endY {
+            // Compute barycentric coordinates 
+            let mut index = rowIdx;
+            let mut alpha = alpha0;
+            let mut beta = beta0;
+            let mut gama = gama0;
+
+            let mut depth = Z0 + Z1 * beta as f32 + Z2 * gama as f32;
+
+            let mut u = t0u + t1u * beta as f32 + t2u * gama as f32;
+            let mut v = t0v + t1v * beta as f32 + t2v * gama as f32;
+            let mut uv_z = t0z + t1z * beta as f32 + t2z * gama as f32;
+
+            for _ in startX..endX {
+                //Test Pixel inside triangle
+                let mask = alpha | beta | gama;
+
+                let previousDepthValue = self.depth_buffer[index as usize];
+                let mergedDepth = depth.max(previousDepthValue);				
+                let finaldepth = if mask < 0 { previousDepthValue } else { mergedDepth };
+
+                self.depth_buffer[index as usize] = finaldepth;
+
+                if mask > 0 && previousDepthValue < finaldepth {
+                    let one_over_uv_z = 1.0 / uv_z;
+                    let sample = tex.sample(u * one_over_uv_z, v * one_over_uv_z);
+                    pge.draw_target[pge.current_draw_target].data[index as usize] = sample;
+                }
+
+                // inc per pixel
+                index += 1;
+                alpha += A0;
+                beta += A1;
+                gama += A2;
+                depth += zx;
+                u += tux;
+                v += tvx;
+                uv_z += tz;
+            }
+
+            // inc per row
+            row += 1;
+            rowIdx += pge.screen_width;
+            alpha0 += B0;
+            beta0 += B1;
+            gama0 += B2;
+        }
+    }   
+
     pub fn textured_triangle(&mut self, pge: &mut PGE, mut x1: i32, mut y1: i32, mut u1: f32, mut v1: f32, mut w1: f32,
         mut x2: i32, mut y2: i32, mut u2: f32, mut v2: f32, mut w2: f32,
         mut x3: i32, mut y3: i32, mut u3: f32, mut v3: f32, mut w3: f32, tex: &Sprite) {
@@ -510,7 +670,7 @@ impl Pipeline {
 					let index = (i * pge.screen_width + j) as usize;
                     if index < self.depth_buffer.len() {
                         if tex_w > self.depth_buffer[index] {
-                            pge.draw(j, i, &tex.sample_bl(tex_u / tex_w, tex_v / tex_w));
+                            pge.draw(j, i, &tex.sample(tex_u / tex_w, tex_v / tex_w));
                             self.depth_buffer[index] = tex_w;
                         }
                     }
@@ -568,7 +728,7 @@ impl Pipeline {
                     let index = (i * pge.screen_width + j) as usize;
                     if index < self.depth_buffer.len() {
                         if tex_w > self.depth_buffer[index] {
-                            pge.draw(j, i, &tex.sample_bl(tex_u / tex_w, tex_v / tex_w));
+                            pge.draw(j, i, &tex.sample(tex_u / tex_w, tex_v / tex_w));
                             self.depth_buffer[index] = tex_w;
                         }
                     }
