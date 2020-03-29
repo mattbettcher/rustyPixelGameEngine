@@ -1,6 +1,8 @@
 # rustyPixelGameEngine
 A port of olcPixelGameEngine to Rust, a tool used in javidx9's YouTube videos and projects. I've kept the original license and the link to documentation is straight to the official project.
 
+![Rust](https://github.com/ElementG9/rustyPixelGameEngine/workflows/Rust/badge.svg)
+
 # About me
 * Fairly experienced, self-taught, C++ hobbyist programmer.
 * Turned to Rust because -
