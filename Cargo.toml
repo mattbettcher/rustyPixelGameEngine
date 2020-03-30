@@ -3,6 +3,8 @@ name = "pge"
 version = "0.1.0"
 authors = ["Matt"]
 edition = "2018"
+description = "A port of olcPixelGameEngine to Rust, a tool used in javidx9's YouTube videos and projects."
+license-file = "LICENSE.md"
 
 [dependencies]
 minifb = "0.15.3"
