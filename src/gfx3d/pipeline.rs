@@ -235,7 +235,7 @@ impl Pipeline {
 		let mut dv1 = v2 - v1;
 		let mut du1 = u2 - u1;
         let mut dw1 = w2 - w1;
-        let mut dc1 = c2 - c1;
+        let mut _dc1 = c2 - c1;
 
 		let dy2 = y3 - y1;
 		let dx2 = x3 - x1;
@@ -247,10 +247,10 @@ impl Pipeline {
         let mut tex_u: f32;
         let mut tex_v: f32; 
         let mut tex_w: f32;
-        let mut col_r: f32;
-        let mut col_g: f32;
-        let mut col_b: f32;
-        let mut col_a: f32;
+        let mut _col_r: f32;
+        let mut _col_g: f32;
+        let mut _col_b: f32;
+        let mut _col_a: f32;
 
 		let mut dax_step = 0.0; 
         let mut du1_step = 0.0; 
@@ -274,10 +274,10 @@ impl Pipeline {
 		    du1_step = du1 / dy1.abs() as f32;
 		    dv1_step = dv1 / dy1.abs() as f32;
             dw1_step = dw1 / dy1.abs() as f32;
-            dc1r_step = dc1.r / dy1.abs() as f32;
-            dc1g_step = dc1.g / dy1.abs() as f32;
-            dc1b_step = dc1.b / dy1.abs() as f32;
-            dc1a_step = dc1.a / dy1.abs() as f32;
+            dc1r_step = _dc1.r / dy1.abs() as f32;
+            dc1g_step = _dc1.g / dy1.abs() as f32;
+            dc1b_step = _dc1.b / dy1.abs() as f32;
+            dc1a_step = _dc1.a / dy1.abs() as f32;
         }
 
 		if dy2 > 0 {
@@ -330,10 +330,10 @@ impl Pipeline {
 					tex_u = (1.0 - t) * tex_su + t * tex_eu;
 					tex_v = (1.0 - t) * tex_sv + t * tex_ev;
 					tex_w = (1.0 - t) * tex_sw + t * tex_ew;
-					col_r = (1.0 - t) * col_sr + t * col_er;
-					col_g = (1.0 - t) * col_sg + t * col_eg;
-					col_b = (1.0 - t) * col_sb + t * col_eb;
-                    col_a = (1.0 - t) * col_sa + t * col_ea;
+					_col_r = (1.0 - t) * col_sr + t * col_er;
+					_col_g = (1.0 - t) * col_sg + t * col_eg;
+					_col_b = (1.0 - t) * col_sb + t * col_eb;
+                    _col_a = (1.0 - t) * col_sa + t * col_ea;
                     // TODO - use interpolated color!!!!
 					if tex_w > self.depth_buffer[(i * pge.screen_width + j) as usize] {
 						pge.draw(j, i, &tex.sample(tex_u / tex_w, tex_v / tex_w));
@@ -350,7 +350,7 @@ impl Pipeline {
 		dv1 = v3 - v2;
 		du1 = u3 - u2;
 		dw1 = w3 - w2;
-		dc1 = c3 - c2;
+		_dc1 = c3 - c2;
 
 		if dy1 > 0 { dax_step = dx1 as f32 / dy1.abs() as f32; }
 		if dy2 > 0 { dbx_step = dx2 as f32 / dy2.abs() as f32; }
@@ -402,10 +402,10 @@ impl Pipeline {
 					tex_u = (1.0 - t) * tex_su + t * tex_eu;
 					tex_v = (1.0 - t) * tex_sv + t * tex_ev;
                     tex_w = (1.0 - t) * tex_sw + t * tex_ew;
-                    col_r = (1.0 - t) * col_sr + t * col_er;
-					col_g = (1.0 - t) * col_sg + t * col_eg;
-					col_b = (1.0 - t) * col_sb + t * col_eb;
-                    col_a = (1.0 - t) * col_sa + t * col_ea;
+                    _col_r = (1.0 - t) * col_sr + t * col_er;
+					_col_g = (1.0 - t) * col_sg + t * col_eg;
+					_col_b = (1.0 - t) * col_sb + t * col_eb;
+                    _col_a = (1.0 - t) * col_sa + t * col_ea;
                     // TODO - use interpolated color!!!!
 
                     if tex_w > self.depth_buffer[(i * pge.screen_width + j) as usize] {
