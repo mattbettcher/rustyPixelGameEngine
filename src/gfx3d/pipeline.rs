@@ -73,6 +73,7 @@ impl Pipeline {
     }
 
     pub fn render(&mut self, pge: &mut PGE, triangles: &Vec<Triangle>, tex: &Sprite) { // flags: RenderOptions, cull_dir: CullDirection) {
+        #[allow(unused_variables)]
         let mut tri_count = 0;
         let world_view = self.world * self.view;
 
