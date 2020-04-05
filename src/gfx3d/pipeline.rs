@@ -1,8 +1,8 @@
 use crate::color::Color;
-use crate::WHITE;
+
 use crate::gfx3d::plane::Plane;
 use crate::gfx3d::vec4d::Vec4d;
-use crate::{PGE, Pixel};
+use crate::{PGE};
 use crate::gfx3d::triangle::Triangle;
 use crate::Sprite;
 use super::vec3d::Vec3d;
