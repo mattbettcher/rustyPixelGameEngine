@@ -14,3 +14,4 @@ num-traits = ""
 [dev-dependencies]
 rand = ""
 image = "0.22.4"
+rustfix = ""

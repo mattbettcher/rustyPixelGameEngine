@@ -1,8 +1,8 @@
 use crate::color::Color;
-use crate::WHITE;
+
 use crate::gfx3d::plane::Plane;
 use crate::gfx3d::vec4d::Vec4d;
-use crate::{PGE, Pixel};
+use crate::{PGE};
 use crate::gfx3d::triangle::Triangle;
 use crate::Sprite;
 use super::vec3d::Vec3d;
@@ -73,6 +73,7 @@ impl Pipeline {
     }
 
     pub fn render(&mut self, pge: &mut PGE, triangles: &Vec<Triangle>, tex: &Sprite) { // flags: RenderOptions, cull_dir: CullDirection) {
+        #[allow(unused_variables)]
         let mut tri_count = 0;
         let world_view = self.world * self.view;
 
@@ -234,7 +235,7 @@ impl Pipeline {
 		let mut dv1 = v2 - v1;
 		let mut du1 = u2 - u1;
         let mut dw1 = w2 - w1;
-        let mut dc1 = c2 - c1;
+        let mut _dc1 = c2 - c1;
 
 		let dy2 = y3 - y1;
 		let dx2 = x3 - x1;
@@ -246,10 +247,10 @@ impl Pipeline {
         let mut tex_u: f32;
         let mut tex_v: f32; 
         let mut tex_w: f32;
-        let mut col_r: f32;
-        let mut col_g: f32;
-        let mut col_b: f32;
-        let mut col_a: f32;
+        let mut _col_r: f32;
+        let mut _col_g: f32;
+        let mut _col_b: f32;
+        let mut _col_a: f32;
 
 		let mut dax_step = 0.0; 
         let mut du1_step = 0.0; 
@@ -273,10 +274,10 @@ impl Pipeline {
 		    du1_step = du1 / dy1.abs() as f32;
 		    dv1_step = dv1 / dy1.abs() as f32;
             dw1_step = dw1 / dy1.abs() as f32;
-            dc1r_step = dc1.r / dy1.abs() as f32;
-            dc1g_step = dc1.g / dy1.abs() as f32;
-            dc1b_step = dc1.b / dy1.abs() as f32;
-            dc1a_step = dc1.a / dy1.abs() as f32;
+            dc1r_step = _dc1.r / dy1.abs() as f32;
+            dc1g_step = _dc1.g / dy1.abs() as f32;
+            dc1b_step = _dc1.b / dy1.abs() as f32;
+            dc1a_step = _dc1.a / dy1.abs() as f32;
         }
 
 		if dy2 > 0 {
@@ -329,10 +330,10 @@ impl Pipeline {
 					tex_u = (1.0 - t) * tex_su + t * tex_eu;
 					tex_v = (1.0 - t) * tex_sv + t * tex_ev;
 					tex_w = (1.0 - t) * tex_sw + t * tex_ew;
-					col_r = (1.0 - t) * col_sr + t * col_er;
-					col_g = (1.0 - t) * col_sg + t * col_eg;
-					col_b = (1.0 - t) * col_sb + t * col_eb;
-                    col_a = (1.0 - t) * col_sa + t * col_ea;
+					_col_r = (1.0 - t) * col_sr + t * col_er;
+					_col_g = (1.0 - t) * col_sg + t * col_eg;
+					_col_b = (1.0 - t) * col_sb + t * col_eb;
+                    _col_a = (1.0 - t) * col_sa + t * col_ea;
                     // TODO - use interpolated color!!!!
 					if tex_w > self.depth_buffer[(i * pge.screen_width + j) as usize] {
 						pge.draw(j, i, &tex.sample(tex_u / tex_w, tex_v / tex_w));
@@ -349,7 +350,7 @@ impl Pipeline {
 		dv1 = v3 - v2;
 		du1 = u3 - u2;
 		dw1 = w3 - w2;
-		dc1 = c3 - c2;
+		_dc1 = c3 - c2;
 
 		if dy1 > 0 { dax_step = dx1 as f32 / dy1.abs() as f32; }
 		if dy2 > 0 { dbx_step = dx2 as f32 / dy2.abs() as f32; }
@@ -401,10 +402,10 @@ impl Pipeline {
 					tex_u = (1.0 - t) * tex_su + t * tex_eu;
 					tex_v = (1.0 - t) * tex_sv + t * tex_ev;
                     tex_w = (1.0 - t) * tex_sw + t * tex_ew;
-                    col_r = (1.0 - t) * col_sr + t * col_er;
-					col_g = (1.0 - t) * col_sg + t * col_eg;
-					col_b = (1.0 - t) * col_sb + t * col_eb;
-                    col_a = (1.0 - t) * col_sa + t * col_ea;
+                    _col_r = (1.0 - t) * col_sr + t * col_er;
+					_col_g = (1.0 - t) * col_sg + t * col_eg;
+					_col_b = (1.0 - t) * col_sb + t * col_eb;
+                    _col_a = (1.0 - t) * col_sa + t * col_ea;
                     // TODO - use interpolated color!!!!
 
                     if tex_w > self.depth_buffer[(i * pge.screen_width + j) as usize] {
@@ -436,15 +437,15 @@ impl Pipeline {
         }
 
         // use fixed-point only for X and Y.  Avoid work for Z and W.
-        let fxPtX0 = (v0.x + 0.5) as i32;
-        let fxPtX1 = (v1.x + 0.5) as i32;
-        let fxPtX2 = (v2.x + 0.5) as i32;
-        let fxPtY0 = (v0.y + 0.5) as i32;
-        let fxPtY1 = (v1.y + 0.5) as i32;
-        let fxPtY2 = (v2.y + 0.5) as i32;
-        let Z0 = v0.z;
-        let mut Z1 = v1.z;
-        let mut Z2 = v2.z;
+        let fx_pt_x0 = (v0.x + 0.5) as i32;
+        let fx_pt_x1 = (v1.x + 0.5) as i32;
+        let fx_pt_x2 = (v2.x + 0.5) as i32;
+        let fx_pt_y0 = (v0.y + 0.5) as i32;
+        let fx_pt_y1 = (v1.y + 0.5) as i32;
+        let fx_pt_y2 = (v2.y + 0.5) as i32;
+        let z0 = v0.z;
+        let mut z1 = v1.z;
+        let mut z2 = v2.z;
 
         // texture space
         let t0u = v0uv.x;
@@ -462,19 +463,19 @@ impl Pipeline {
         // Fab(x, y) =     Ax       +       By     +      C              = 0
         // Fab(x, y) = (ya - yb)x   +   (xb - xa)y + (xa * yb - xb * ya) = 0
         // Compute A = (ya - yb) for the 3 line segments that make up each triangle
-        let A0 = fxPtY1 - fxPtY2;
-        let A1 = fxPtY2 - fxPtY0;
-        let A2 = fxPtY0 - fxPtY1;
+        let a0 = fx_pt_y1 - fx_pt_y2;
+        let a1 = fx_pt_y2 - fx_pt_y0;
+        let a2 = fx_pt_y0 - fx_pt_y1;
 
         // Compute B = (xb - xa) for the 3 line segments that make up each triangle
-        let B0 = fxPtX2 - fxPtX1;
-        let B1 = fxPtX0 - fxPtX2;
-        let B2 = fxPtX1 - fxPtX0;
+        let b0 = fx_pt_x2 - fx_pt_x1;
+        let b1 = fx_pt_x0 - fx_pt_x2;
+        let b2 = fx_pt_x1 - fx_pt_x0;
 
         // Compute C = (xa * yb - xb * ya) for the 3 line segments that make up each triangle
-        let C0 = fxPtX1 * fxPtY2 - fxPtX2 * fxPtY1;
-        let C1 = fxPtX2 * fxPtY0 - fxPtX0 * fxPtY2;
-        let C2 = fxPtX0 * fxPtY1 - fxPtX1 * fxPtY0;
+        let c0 = fx_pt_x1 * fx_pt_y2 - fx_pt_x2 * fx_pt_y1;
+        let c1 = fx_pt_x2 * fx_pt_y0 - fx_pt_x0 * fx_pt_y2;
+        let c2 = fx_pt_x0 * fx_pt_y1 - fx_pt_x1 * fx_pt_y0;
 
         // Determine edges
         let is_top_left = |v0: &Vec4d, v1: &Vec4d| -> bool {
@@ -487,11 +488,11 @@ impl Pipeline {
         let bias2 = if is_top_left(v0, v1) { 0 } else { -1 };
 
         // Compute triangle area
-        let tri_area = (fxPtX1 - fxPtX0) * (fxPtY2 - fxPtY0) - (fxPtX0 - fxPtX2) * (fxPtY0 - fxPtY1);
+        let tri_area = (fx_pt_x1 - fx_pt_x0) * (fx_pt_y2 - fx_pt_y0) - (fx_pt_x0 - fx_pt_x2) * (fx_pt_y0 - fx_pt_y1);
         let one_over_tri_area = 1.0 / tri_area as f32;
 
-        Z1 = (Z1 - Z0) * one_over_tri_area;
-        Z2 = (Z2 - Z0) * one_over_tri_area;
+        z1 = (z1 - z0) * one_over_tri_area;
+        z2 = (z2 - z0) * one_over_tri_area;
 
         t1u = (t1u - t0u) * one_over_tri_area;
         t2u = (t2u - t0u) * one_over_tri_area;
@@ -503,51 +504,51 @@ impl Pipeline {
         t2z = (t2z - t0z) * one_over_tri_area;
 
         // Use bounding box traversal strategy to determine which pixels to rasterize 
-        let startX = max(min(min(fxPtX0, fxPtX1), fxPtX2), 0);// & 0xFFFFFFFE;
-        let endX = min(max(max(fxPtX0, fxPtX1), fxPtX2), pge.screen_width);
+        let start_x = max(min(min(fx_pt_x0, fx_pt_x1), fx_pt_x2), 0);// & 0xFFFFFFFE;
+        let end_x = min(max(max(fx_pt_x0, fx_pt_x1), fx_pt_x2), pge.screen_width);
 
-        let startY = max(min(min(fxPtY0, fxPtY1), fxPtY2), 0);// & 0xFFFFFFFE;
-        let endY = min(max(max(fxPtY0, fxPtY1), fxPtY2), pge.screen_height);
+        let start_y = max(min(min(fx_pt_y0, fx_pt_y1), fx_pt_y2), 0);// & 0xFFFFFFFE;
+        let end_y = min(max(max(fx_pt_y0, fx_pt_y1), fx_pt_y2), pge.screen_height);
 
-        let mut rowIdx = startY * pge.screen_width + startX;
-        let col = startX;
-        let mut row = startY;
+        let mut row_idx = start_y * pge.screen_width + start_x;
+        let col = start_x;
+        let mut row = start_y;
 
-        // Incrementally compute Fab(x, y) for all the pixels inside the bounding box formed by (startX, endX) and (startY, endY)
-        let mut alpha0 = (A0 * col) + (B0 * row) + C0 + bias0;
-        let mut beta0 = (A1 * col) + (B1 * row) + C1 + bias1;
-        let mut gama0 = (A2 * col) + (B2 * row) + C2 + bias2;
+        // Incrementally compute Fab(x, y) for all the pixels inside the bounding box formed by (start_x, end_x) and (start_y, end_y)
+        let mut alpha0 = (a0 * col) + (b0 * row) + c0 + bias0;
+        let mut beta0 = (a1 * col) + (b1 * row) + c1 + bias1;
+        let mut gama0 = (a2 * col) + (b2 * row) + c2 + bias2;
 
-        let zx = A1 as f32 * Z1 + A2 as f32 * Z2;
+        let zx = a1 as f32 * z1 + a2 as f32 * z2;
 
-        let tux = A1 as f32 * t1u + A2 as f32 * t2u;
-        let tvx = A1 as f32 * t1v + A2 as f32 * t2v;
-        let tz = A1 as f32 * t1z + A2 as f32 * t2z;
+        let tux = a1 as f32 * t1u + a2 as f32 * t2u;
+        let tvx = a1 as f32 * t1v + a2 as f32 * t2v;
+        let tz = a1 as f32 * t1z + a2 as f32 * t2z;
 
-        for _ in startY..endY {
+        for _ in start_y..end_y {
             // Compute barycentric coordinates 
-            let mut index = rowIdx;
+            let mut index = row_idx;
             let mut alpha = alpha0;
             let mut beta = beta0;
             let mut gama = gama0;
 
-            let mut depth = Z0 + Z1 * beta as f32 + Z2 * gama as f32;
+            let mut depth = z0 + z1 * beta as f32 + z2 * gama as f32;
 
             let mut u = t0u + t1u * beta as f32 + t2u * gama as f32;
             let mut v = t0v + t1v * beta as f32 + t2v * gama as f32;
             let mut uv_z = t0z + t1z * beta as f32 + t2z * gama as f32;
 
-            for _ in startX..endX {
+            for _ in start_x..end_x {
                 //Test Pixel inside triangle
                 let mask = alpha | beta | gama;
 
-                let previousDepthValue = self.depth_buffer[index as usize];
-                let mergedDepth = depth.max(previousDepthValue);				
-                let finaldepth = if mask < 0 { previousDepthValue } else { mergedDepth };
+                let previous_depth_value = self.depth_buffer[index as usize];
+                let merged_depth = depth.max(previous_depth_value);
+                let finaldepth = if mask < 0 { previous_depth_value } else { merged_depth };
 
                 self.depth_buffer[index as usize] = finaldepth;
 
-                if mask > 0 && previousDepthValue < finaldepth {
+                if mask > 0 && previous_depth_value < finaldepth {
                     let one_over_uv_z = 1.0 / uv_z;
                     let sample = tex.sample(u * one_over_uv_z, v * one_over_uv_z);
                     pge.draw_target[pge.current_draw_target].data[index as usize] = sample;
@@ -555,9 +556,9 @@ impl Pipeline {
 
                 // inc per pixel
                 index += 1;
-                alpha += A0;
-                beta += A1;
-                gama += A2;
+                alpha += a0;
+                beta += a1;
+                gama += a2;
                 depth += zx;
                 u += tux;
                 v += tvx;
@@ -566,10 +567,10 @@ impl Pipeline {
 
             // inc per row
             row += 1;
-            rowIdx += pge.screen_width;
-            alpha0 += B0;
-            beta0 += B1;
-            gama0 += B2;
+            row_idx += pge.screen_width;
+            alpha0 += b0;
+            beta0 += b1;
+            gama0 += b2;
         }
     }   
 
