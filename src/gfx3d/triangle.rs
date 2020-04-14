@@ -33,41 +33,18 @@ impl Triangle {
             pn.dot(p) - pn.dot(&plane.position)
         };
 
-        // Get signed distance of each point in triangle to plane
-        let d0 = dist(&self.p[0]);
-        let d1 = dist(&self.p[1]);
-        let d2 = dist(&self.p[2]);
-
         // test each point 
-        // TODO - this is ugly rust code and it should be able to be condensed quite bit
-        if d0 >= 0.0 { 
-            inside_points[inside_count] = self.p[0]; 
-            inside_tex[inside_count] = self.t[0];
-            inside_count += 1;
-        } else {
-            outside_points[outside_count] = self.p[0]; 
-            outside_tex[outside_count] = self.t[0];
-            outside_count += 1;
-        }
-
-        if d1 >= 0.0 { 
-            inside_points[inside_count] = self.p[1]; 
-            inside_tex[inside_count] = self.t[1];
-            inside_count += 1;
-        } else {
-            outside_points[outside_count] = self.p[1]; 
-            outside_tex[outside_count] = self.t[1];
-            outside_count += 1;
-        }
-
-        if d2 >= 0.0 { 
-            inside_points[inside_count] = self.p[2]; 
-            inside_tex[inside_count] = self.t[2];
-            inside_count += 1;
-        } else {
-            outside_points[outside_count] = self.p[2]; 
-            outside_tex[outside_count] = self.t[2];
-            outside_count += 1;
+        for (vertex, texture) in self.p.iter().zip(self.t.iter()) {
+            // Get signed distance of each point in triangle to plane
+            if dist(vertex) >= 0.0 {
+                inside_points[inside_count] = *vertex;
+                inside_tex[inside_count] = *texture;
+                inside_count += 1;
+            } else {
+                outside_points[outside_count] = *vertex;
+                outside_tex[outside_count] = *texture;
+                outside_count += 1;
+            }
         }
 
         // Now classify triangle points, and break the input triangle into 
