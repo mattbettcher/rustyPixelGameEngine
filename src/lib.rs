@@ -238,7 +238,7 @@ impl PGE {
 
         if let Some(win) = &mut self.window {
             win.limit_update_rate(None);
-	    win.set_key_repeat_delay(0.0);
+            win.set_key_repeat_delay(0.0);
             //win.limit_update_rate(Some(std::time::Duration::from_millis(2)));
         }
         if !state.on_user_create() {
