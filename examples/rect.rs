@@ -25,6 +25,6 @@ impl State for GameState {
 
 fn main() {
     let mut gs = GameState{};
-    let mut pge = PGE::construct("Rect", 640, 480, 1, 1);
-    pge.start(&mut gs);
+    let pge:  PGE  = PGE::construct("Rect", 640, 480, 1, 1);
+    PGE::start(pge, &mut gs);
 }

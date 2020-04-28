@@ -1,6 +1,6 @@
 
-use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, ScaleMode, Key, KeyRepeat};
-
+//use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, ScaleMode, Key, KeyRepeat};
+use miniquad::*;
 
 use std::time::Instant;
 use std::mem;
@@ -171,7 +171,6 @@ pub struct PGE {
     app_name: String,
     pub draw_target: Vec<Sprite>,
     pub current_draw_target: usize,
-    window: Option<Window>,
     current_mouse_state: Vec<HWButton>,
     current_key_state: Vec<HWButton>,
     previous_mouse_state: [bool; 3],
@@ -190,16 +189,25 @@ pub struct PGE {
     frame_count: i32,
     mode: PixelMode,
     blend_factor: f32,
-    func_pixel_mode: Option<fn(x: i32, y: i32, p1: &Pixel, p2: &Pixel)>
+    func_pixel_mode: Option<fn(x: i32, y: i32, p1: &Pixel, p2: &Pixel)>,
+}
+
+impl EventHandler for PGE {
+    fn update(&mut self, _ctx: &mut Context) {
+
+    }
+
+    fn draw(&mut self, ctx: &mut Context) {
+        ctx.clear(Some((0., 1., 0., 1.)), None, None);
+    }
 }
 
 impl PGE {
-    pub fn construct(name: &str, screen_w: usize, screen_h: usize, pixel_w: usize, pixel_h: usize) -> PGE {
+    pub fn construct(name: &str, screen_w: usize, screen_h: usize, pixel_w: usize, pixel_h: usize) ->  PGE {
         PGE {
             app_name: name.to_string(),
             draw_target: vec![Sprite::new(screen_w, screen_h)],
             current_draw_target: 0,
-            window: None,
             previous_mouse_state: [false; 3],
             previous_key_state: [false; 256],
             current_mouse_state: vec![Default::default(); 3],
@@ -222,149 +230,27 @@ impl PGE {
         }
     }
 
-    pub fn start(&mut self, state: &mut dyn State) {
+    pub fn start(pge: PGE, state: &mut dyn State) {
         // Construct the window
-        self.window = Some(Window::new(&self.app_name,
-                                (self.screen_width * self.pixel_width) as usize,
-                                (self.screen_height * self.pixel_height) as usize,
-                                WindowOptions {
-                                    scale_mode: ScaleMode::Stretch,
-                                    scale: Scale::X1,
-                                    borderless: false,
-                                    resize: true,
-                                    title: true
-                                })
-                                .unwrap_or_else(|e| {panic!("{}", e)}));
-
-        if let Some(win) = &mut self.window {
-            win.limit_update_rate(None);
-            win.set_key_repeat_delay(0.0);
-            //win.limit_update_rate(Some(std::time::Duration::from_millis(2)));
-        }
-        if !state.on_user_create() {
-            self.active = false;
-        }
-
-
-        let mut last_time = Instant::now();
-
-        while self.active {
-            let current_time = Instant::now();
-            let elapsed = current_time - last_time;
-            last_time = current_time;
-
-            // Handle User Input - Keyboard
-            let mut new_key_state: [bool; 256] = [false; 256];
-            if let Some(win) = &mut self.window { 
-                let keys = win.get_keys_pressed(KeyRepeat::Yes).unwrap();
-                for key in keys {
-                    new_key_state[key as usize] = true;
-                }
-            };
-
-            for i in 0..256 {
-                self.current_key_state[i].pressed = false;
-                self.current_key_state[i].released = false;
-
-                if new_key_state[i] != self.previous_key_state[i] {
-                    if new_key_state[i] {
-                        self.current_key_state[i].pressed = !self.current_key_state[i].held;
-                        self.current_key_state[i].held = true;
-                    } else {
-                        self.current_key_state[i].released = true;
-                        self.current_key_state[i].held = false;
-                    }
-                }
-
-                self.previous_key_state[i] = new_key_state[i];
-            }
-
-            // Handle User Input - Mouse
-            let mut new_mouse_state: [bool; 3] = [false; 3];
-            new_mouse_state[0] = if let Some(win) = &mut self.window { win.get_mouse_down(MouseButton::Left) } else { false };
-            new_mouse_state[1] = if let Some(win) = &mut self.window { win.get_mouse_down(MouseButton::Middle) } else { false };
-            new_mouse_state[2] = if let Some(win) = &mut self.window { win.get_mouse_down(MouseButton::Right) } else { false };
-            
-            for i in 0..3 {
-                self.current_mouse_state[i].pressed = false;
-                self.current_mouse_state[i].released = false;
-
-                if new_mouse_state[i] != self.previous_mouse_state[i] {
-                    if new_mouse_state[i] {
-                        self.current_mouse_state[i].pressed = !self.current_mouse_state[i].held;
-                        self.current_mouse_state[i].held = true;
-                    }
-                    else
-                    {
-                        self.current_mouse_state[i].released = true;
-                        self.current_mouse_state[i].held = false;
-                    }
-                }
-
-                self.previous_mouse_state[i] = new_mouse_state[i];
-            }
-
-            let mut mpos = (0.0, 0.0);
-            if let Some(window) = &mut self.window   {
-                mpos = window.get_mouse_pos(MouseMode::Pass).unwrap();
-            }
-            self.update_mouse(mpos.0 as i32, mpos.1 as i32);
-
-            // Handle Frame Update
-            let elapsed_time = time::duration_to_f64(elapsed) as f32;
-            if !state.on_user_update(self, elapsed_time) {
-                self.active = false;
-            }
-
-            // Display Graphics
-            if let Some(window) = &mut self.window {
-                unsafe {
-                    window.update_with_buffer(
-                        mem::transmute(self.draw_target[self.current_draw_target].data.as_slice()),
-                        (self.screen_width) as usize,
-                        (self.screen_height) as usize,
-                        ).unwrap_or_else(|e| {panic!("{}", e)});
-                }
-            }
-
-            // Update title bar
-            self.frame_timer += elapsed_time;
-            self.frame_count += 1;
-            if self.frame_timer >= 1.0 {
-                self.frame_timer -= 1.0;
-                if let Some(window) = &mut self.window {
-                    let mut title = "".to_owned();
-                    title += &self.app_name;
-                    title += " - FPS: ";
-                    title += &self.frame_count.to_string();
-
-                    window.set_title(&title);
-                    self.frame_count = 0;
-                }
-            }
-
-            if let Some(window) = &mut self.window {
-                if !window.is_open() {
-                    self.active = false;
-                }
-            }
-        }
-
-        state.on_user_destroy();
+        miniquad::start(conf::Conf::default(), |ctx| {
+            UserData::owning(pge, ctx)
+        });
     }
 
     // Hardware Interfaces
 
     pub fn is_focused(&mut self) -> bool {
-        if let Some(window) = &mut self.window   {
+        false
+        /*if let Some(window) = &mut self.window   {
             window.is_active()
-        } else { false }
+        } else { false }*/
     }
 
+    /*
     pub fn get_key(&mut self, k: Key) -> HWButton {
         self.current_key_state[k as usize]
     }
-
+    */
     pub fn get_mouse_x(&mut self) -> i32 {
         self.mouse_pos_x
     }
