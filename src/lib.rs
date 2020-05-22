@@ -8,8 +8,8 @@ use std::cmp;
 
 pub mod time;
 pub mod color;
-pub mod gfx2d;
-pub mod gfx3d;
+//pub mod gfx2d;
+//pub mod gfx3d;
 
 
 // TODO: ordering on this is format dependent?
@@ -160,14 +160,18 @@ impl Sprite {
     }
 }
 
+/*
 #[allow(unused_variables)]
 pub trait State {
     fn on_user_create(&mut self) -> bool { true }
-    fn on_user_update(&mut self, pge: &mut PGE, elapsed_time: f32) -> bool { true }
+    fn on_user_update(&mut self, pge: &mut PGE<T>, elapsed_time: f32) -> bool { true }
     fn on_user_destroy(&mut self) {}
 }
+*/
 
-pub struct PGE {
+type UpdateFn<T> = fn(gs: &mut T, pge: &mut PGE<T>, dt: f32) -> bool;
+
+pub struct PGE<T> {
     app_name: String,
     pub draw_target: Vec<Sprite>,
     pub current_draw_target: usize,
@@ -190,11 +194,12 @@ pub struct PGE {
     mode: PixelMode,
     blend_factor: f32,
     func_pixel_mode: Option<fn(x: i32, y: i32, p1: &Pixel, p2: &Pixel)>,
+    on_user_update: UpdateFn<T>,
 }
 
-impl EventHandler for PGE {
+impl<T> EventHandler for PGE<T> {
     fn update(&mut self, _ctx: &mut Context) {
-
+        self.on_user_update();
     }
 
     fn draw(&mut self, ctx: &mut Context) {
@@ -202,8 +207,9 @@ impl EventHandler for PGE {
     }
 }
 
-impl PGE {
-    pub fn construct(name: &str, screen_w: usize, screen_h: usize, pixel_w: usize, pixel_h: usize) ->  PGE {
+impl<T: 'static> PGE<T> {
+    pub fn construct(name: &str, screen_w: usize, screen_h: usize, pixel_w: usize, pixel_h: usize, on_user_update: UpdateFn<T>) -> PGE<T>
+        where T: 'static {
         PGE {
             app_name: name.to_string(),
             draw_target: vec![Sprite::new(screen_w, screen_h)],
@@ -221,16 +227,17 @@ impl PGE {
             //pixel_y: 2.0 / screen_h as f32,
             mouse_pos_x: 0,
             mouse_pos_y: 0,
-            font: PGE::construct_font_sheet(),
+            font: construct_font_sheet(),
             frame_count: 0,
             frame_timer: 1.0,
             mode: PixelMode::Normal,
             blend_factor: 1.0,
             func_pixel_mode: None,
+            on_user_update: on_user_update,
         }
     }
 
-    pub fn start(pge: PGE, state: &mut dyn State) {
+    pub fn start(pge: PGE<T>) {
         // Construct the window
         miniquad::start(conf::Conf::default(), |ctx| {
             UserData::owning(pge, ctx)
@@ -613,28 +620,28 @@ impl PGE {
         // Proper way, adds about 30 fps
         for i in self.draw_target[self.current_draw_target].data.iter_mut() { *i = p.clone(); }
     }
+}
 
-    fn construct_font_sheet() -> Sprite {
-        let data = include_bytes!("font.png");
-        let image = image::load_from_memory_with_format(data, image::ImageFormat::PNG).unwrap();
-        let raw_image = image.raw_pixels();
-        let mut pix_data: Vec<Pixel> = Vec::with_capacity(6144);
-        let mut k = 0;
-        for _ in 0..48 {
-                for _ in 0..128 {
-                    let r = raw_image[k];
-                    let g = raw_image[k+1];
-                    let b = raw_image[k+2];
-                    let a = raw_image[k+3];
-                    pix_data.push(Pixel::rgba(r, g, b, a));
-                    k += 4;
-                }
-        }
+fn construct_font_sheet() -> Sprite {
+    let data = include_bytes!("font.png");
+    let image = image::load_from_memory_with_format(data, image::ImageFormat::PNG).unwrap();
+    let raw_image = image.raw_pixels();
+    let mut pix_data: Vec<Pixel> = Vec::with_capacity(6144);
+    let mut k = 0;
+    for _ in 0..48 {
+            for _ in 0..128 {
+                let r = raw_image[k];
+                let g = raw_image[k+1];
+                let b = raw_image[k+2];
+                let a = raw_image[k+3];
+                pix_data.push(Pixel::rgba(r, g, b, a));
+                k += 4;
+            }
+    }
 
-        Sprite {
-            width: 128,
-            height: 48,
-            data: pix_data
-        }
+    Sprite {
+        width: 128,
+        height: 48,
+        data: pix_data
     }
 }
