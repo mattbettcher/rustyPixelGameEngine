@@ -449,10 +449,11 @@ impl PGE {
         let mut err = if dx > dy { dx / 2 } else { -dy / 2 };
 
         loop {
-            //buffer[(y * (WIDTH as i32) + x) as usize] = color;
             self.draw(x, y, p);
-            if x == x2 && y == y2 { break };
-            if x == x2 || y == y2 { break };
+            if sx > 0 && sy > 0 { if x >= x2 && y >= y2 { break }};
+            if sx > 0 && sy < 0 { if x >= x2 && y <= y2 { break }};
+            if sx < 0 && sy > 0 { if x <= x2 && y >= y2 { break }};
+            if sx < 0 && sy < 0 { if x <= x2 && y <= y2 { break }};
             if err > -dx {err = err - dy; x = x + sx; }
             if err < dy  {err = err + dx; y = y + sy; }        
         }
