@@ -629,8 +629,11 @@ impl PGE {
 
     pub fn render(&mut self) {
         self.ctx.texture_update(self.bindings.images[0], unsafe {
-            //std::slice::from_raw_parts(self.draw_target[self.current_target].pixel_data.as_ptr() as *const u8, self.draw_target[self.current_target].pixel_data.len() * 4)
-            std::slice::from_raw_parts(self.layers[self.current_layer].surface.sprite.pixel_data.as_ptr() as *const u8, self.layers[self.current_layer].surface.sprite.pixel_data.len() * 4)
+            if self.current_layer < self.layers.len() {
+                std::slice::from_raw_parts(self.layers[self.current_layer].surface.sprite.pixel_data.as_ptr() as *const u8, self.layers[self.current_layer].surface.sprite.pixel_data.len() * 4)
+            } else {
+                std::slice::from_raw_parts(self.layers[0].surface.sprite.pixel_data.as_ptr() as *const u8, self.layers[0].surface.sprite.pixel_data.len() * 4)
+            }
         });
 
         self.ctx.begin_default_pass(Default::default());
