@@ -108,10 +108,31 @@ pub struct PGE {
     pub time: f64,
     pub frames: usize,
     pub fixed_frames: usize,
+
+    // input stuff
+    pub mouse_pos: IVec2,
 }
 
 impl PGE {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn construct<GT>(app_name: &str, width: usize, height: usize, pix_width: usize, pix_height: usize) 
+        where GT: GameLoop<GameType = GT> + 'static 
+        {
+        let mut conf = conf::Conf::default();
+
+        conf.window_title = app_name.to_owned();
+        conf.window_width = (width * pix_width) as i32;
+        conf.window_height = (height * pix_height) as i32;
+        conf.window_resizable = false;
+
+        miniquad::start(conf, move || {
+            Box::new(App::<GT> {
+                game: None,
+                pge: PGE::new(width, height, pix_width, pix_height),
+            })
+        });
+    }
+
+    pub fn new(width: usize, height: usize, pix_width: usize, pix_height: usize) -> Self {
 
         let mut ctx = window::new_rendering_backend();
         let back_buffer = Sprite::new(width as u32, height as u32);
@@ -170,8 +191,8 @@ impl PGE {
             screen_width: width, 
             screen_height: height, 
             draw_target: vec![back_buffer], 
-            pixel_width: 1, 
-            pixel_height: 1, 
+            pixel_width: pix_width as i32, 
+            pixel_height: pix_height as i32, 
             pipeline, bindings, 
             current_target: 0, 
             pixel_mode: PixelMode::Normal, 
@@ -186,7 +207,16 @@ impl PGE {
             time: 0.0,
             frames: 0,
             fixed_frames: 0,
+            mouse_pos: IVec2::ZERO,
         }
+    }
+
+    pub fn get_mouse_x(&mut self) -> i32 {
+        self.mouse_pos.x
+    }
+
+    pub fn get_mouse_y(&mut self) -> i32 {
+        self.mouse_pos.y
     }
 
     pub fn create_decal(&mut self, sprite: &Sprite) -> Decal {
@@ -607,6 +637,27 @@ pub struct App<T> {
 }
 
 impl<T> EventHandler for App<T> where T: GameLoop<GameType = T> + 'static {
+    fn mouse_motion_event(&mut self, x: f32, y: f32) {
+        // Mouse coords come in screen space
+		// But leave in pixel space
+        let x = x as i32;
+        let y = y as i32;
+		self.pge.mouse_pos.x = x / self.pge.pixel_width;
+		self.pge.mouse_pos.y = y / self.pge.pixel_height;
+
+		if self.pge.mouse_pos.x >= self.pge.screen_width as i32 {
+			self.pge.mouse_pos.x = self.pge.screen_width as i32 - 1;
+        }
+		if self.pge.mouse_pos.y >= self.pge.screen_height as i32 {
+			self.pge.mouse_pos.y = self.pge.screen_height as i32 - 1;
+        }
+
+		if self.pge.mouse_pos.x < 0
+			{ self.pge.mouse_pos.x = 0; }
+		if self.pge.mouse_pos.y < 0
+			{ self.pge.mouse_pos.y = 0; }
+    }
+
     fn update(&mut self) {
         if let Some(game) = &mut self.game {
             let new_time = date::now();
