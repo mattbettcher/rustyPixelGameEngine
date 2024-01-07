@@ -1,33 +1,44 @@
+use std::cmp::{max, min};
 
-//use minifb::{Window, WindowOptions, MouseMode, MouseButton, Scale, ScaleMode, Key, KeyRepeat};
 use miniquad::*;
+use glam::*;
+//use renderable::Renderable;
+pub use sprite::*;
+pub use decal::*;
 
-use std::time::Instant;
-use std::mem;
-use std::cmp;
+mod renderable;
+mod layer;
+mod sprite;
+mod decal;
 
-pub mod time;
-pub mod color;
-//pub mod gfx2d;
-//pub mod gfx3d;
+pub trait GameLoop {
+    type GameType;
+    
+    fn init(pge: &mut PGE) -> Self::GameType where Self: Sized;
+    #[allow(unused_variables)]
+    fn update(&mut self, pge: &mut PGE, dt: f64) {}
+    #[allow(unused_variables)]
+    fn fixed_update(&mut self, pge: &mut PGE, dt: f64) {}
+}
 
-
-// TODO: ordering on this is format dependent?
+#[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct Pixel {
-    pub b: u8,
-    pub g: u8,
     pub r: u8,
+    pub g: u8,
+    pub b: u8,
     pub a: u8,
 }
 
+type Color = Pixel;
+
 impl Pixel {
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Pixel{r:r, g:g, b:b, a:255}
+        Pixel{r, g, b, a:255}
     }
 
     pub fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Pixel{r:r, g:g, b:b, a:a}
+        Pixel{r, g, b, a}
     }
 
     // HACK?
@@ -66,272 +77,207 @@ pub enum PixelMode {
     Normal, Mask, Alpha, Custom
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Copy)]
-pub struct HWButton {
-    pub pressed: bool,
-    pub released: bool,
-    pub held: bool,
+pub struct Renderable {
+    sprite: Sprite,
+    decal: Decal,
 }
 
-#[derive(Debug, Clone)]
-pub struct Sprite {
-    pub width: usize,
-    pub height: usize,
-    pub data: Vec<Pixel>,
-}
-
-impl Sprite {
-    pub fn new(width: usize, height: usize) -> Sprite {
-        Sprite {
-            width: width,
-            height: height,
-            data: vec![Pixel{r:0, g:0, b:0, a:0}; width * height],
-        }
-    }
-
-    pub fn new_with_data(width: usize, height: usize, data: Vec<u8>) -> Sprite {
-        unsafe {
-            Sprite {
-                width: width,
-                height: height,
-                data: std::mem::transmute::<Vec<u8>, Vec<Pixel>>(data),
-            }
-        }
-    }
-
-    pub fn from_rgba_to_bgra(&mut self) {
-        for x in 0..self.width {
-            for y in 0..self.height {
-                self.data[y * self.width + x].from_rgba_to_bgra();
-            }
-        }
-    }
-
-    #[inline]
-    pub fn get_pixel(&self, x: i32, y: i32) -> Pixel {
-        if x >= 0 && x < self.width as i32 && y >= 0 && y < self.height as i32 {
-            self.data[(y * self.width as i32 + x) as usize].clone()
-        } else {
-            Pixel::rgba(0,0,0,0)
-        }
-    }
-
-    #[inline]
-    pub fn set_pixel(&mut self, x: i32, y: i32, p: &Pixel) {
-        if x >= 0 && x < self.width as i32 && y >= 0 && y < self.height as i32 {
-            self.data[(y * self.width as i32 + x) as usize] = p.clone();
-        }
-    }
-
-    #[inline]
-    pub fn sample(&self, x: f32, y: f32) -> Pixel {
-        let sx = (x * self.width as f32) as i32;
-        let sy = (y * self.height as f32) as i32;
-        self.get_pixel(sx, sy)
-    }
-
-    #[inline]
-    pub fn sample_bl(&self, mut u: f32, mut v: f32) -> Pixel {
-        u = u * self.width as f32 - 0.5;
-		v = v * self.height as f32 - 0.5;
-		let x = u.floor() as i32; // cast to int rounds toward zero, not downward
-		let y = v.floor() as i32; // Thanks @joshinils
-		let u_ratio = u - x as f32;
-		let v_ratio = v - y as f32;
-		let u_opposite = 1.0 - u_ratio;
-		let v_opposite = 1.0 - v_ratio;
-
-		let p1 = self.get_pixel(x.max(0), y.max(0));
-		let p2 = self.get_pixel((x+1).min(self.width as i32 - 1), y.max(0));
-		let p3 = self.get_pixel(x.max(0), (y+1).min(self.height as i32 - 1));
-		let p4 = self.get_pixel((x+1).min(self.width as i32 - 1), (y+1).min(self.height as i32 - 1));
-
-		Pixel::rgb(((p1.r as f32 * u_opposite + p2.r as f32 * u_ratio) * v_opposite + (p3.r as f32 * u_opposite + p4.r as f32 * u_ratio) * v_ratio) as u8,
-			       ((p1.g as f32 * u_opposite + p2.g as f32 * u_ratio) * v_opposite + (p3.g as f32 * u_opposite + p4.g as f32 * u_ratio) * v_ratio) as u8,
-                   ((p1.b as f32 * u_opposite + p2.b as f32 * u_ratio) * v_opposite + (p3.b as f32 * u_opposite + p4.b as f32 * u_ratio) * v_ratio) as u8)
-    }
-
-    pub fn get_data(&self) -> &[Pixel] {
-        self.data.as_slice()
-    }
-
-    pub fn clear(&mut self, p: Pixel) {
-        self.data = vec![p; self.width * self.height];
-    }
-}
-
-/*
-#[allow(unused_variables)]
-pub trait State {
-    fn on_user_create(&mut self) -> bool { true }
-    fn on_user_update(&mut self, pge: &mut PGE<T>, elapsed_time: f32) -> bool { true }
-    fn on_user_destroy(&mut self) {}
-}
-*/
-
-type UpdateFn<T> = fn(gs: &mut T, pge: &mut PGE<T>, dt: f32) -> bool;
-
-pub struct PGE<T> {
-    app_name: String,
+pub struct PGE {
+    pub screen_width: usize,
+    pub screen_height: usize,
     pub draw_target: Vec<Sprite>,
-    pub current_draw_target: usize,
-    current_mouse_state: Vec<HWButton>,
-    current_key_state: Vec<HWButton>,
-    previous_mouse_state: [bool; 3],
-    previous_key_state: [bool; 256],
-    active: bool,
-    pub screen_width: i32,
-    pub screen_height: i32,
+    pub current_target: usize,
+    pub pixel_mode: PixelMode,
+    pub blend_factor: f32,
+    pub func_pixel_mode: Option<fn(x: i32, y: i32, p1: &Pixel, p2: &Pixel)>,
+    pub font: Sprite,
+
+    /// Engine internal stuff
+    //layers: Vec<Layer<'a>>,
+    //keyboard_map: HashMap<> TODO:
     pixel_width: i32,
     pixel_height: i32,
-    //pixel_x: f32,
-    //pixel_y: f32,
-    mouse_pos_x: i32,
-    mouse_pos_y: i32,
-    font: Sprite,
-    frame_timer: f32,
-    frame_count: i32,
-    mode: PixelMode,
-    blend_factor: f32,
-    func_pixel_mode: Option<fn(x: i32, y: i32, p1: &Pixel, p2: &Pixel)>,
-    on_user_update: UpdateFn<T>,
+    pipeline: Pipeline,
+    bindings: Bindings,
+    ctx: Box<dyn RenderingBackend>,
+
+    // timing stuff
+    accumulator: f64,
+    current_time: f64,
+    pub dt: f64,
+    pub time: f64,
+    pub frames: usize,
+    pub fixed_frames: usize,
 }
 
-impl<T> EventHandler for PGE<T> {
-    fn update(&mut self, _ctx: &mut Context) {
-        self.on_user_update();
-    }
+impl PGE {
+    pub fn new(width: usize, height: usize) -> Self {
 
-    fn draw(&mut self, ctx: &mut Context) {
-        ctx.clear(Some((0., 1., 0., 1.)), None, None);
-    }
-}
+        let mut ctx = window::new_rendering_backend();
+        let back_buffer = Sprite::new(width as u32, height as u32);
 
-impl<T: 'static> PGE<T> {
-    pub fn construct(name: &str, screen_w: usize, screen_h: usize, pixel_w: usize, pixel_h: usize, on_user_update: UpdateFn<T>) -> PGE<T>
-        where T: 'static {
-        PGE {
-            app_name: name.to_string(),
-            draw_target: vec![Sprite::new(screen_w, screen_h)],
-            current_draw_target: 0,
-            previous_mouse_state: [false; 3],
-            previous_key_state: [false; 256],
-            current_mouse_state: vec![Default::default(); 3],
-            current_key_state: vec![Default::default(); 256],
-            active: true,
-            screen_width: screen_w as i32,
-            screen_height: screen_h as i32,
-            pixel_width: pixel_w as i32,
-            pixel_height: pixel_h as i32,
-            //pixel_x: 2.0 / screen_w as f32,
-            //pixel_y: 2.0 / screen_h as f32,
-            mouse_pos_x: 0,
-            mouse_pos_y: 0,
-            font: construct_font_sheet(),
-            frame_count: 0,
-            frame_timer: 1.0,
-            mode: PixelMode::Normal,
-            blend_factor: 1.0,
-            func_pixel_mode: None,
-            on_user_update: on_user_update,
+        #[rustfmt::skip]
+        let vertices: [Vertex; 4] = [
+            Vertex { pos : Vec2 { x: -1.0, y: -1.0 }, uv: Vec2 { x: 0., y: 1. } },
+            Vertex { pos : Vec2 { x:  1.0, y: -1.0 }, uv: Vec2 { x: 1., y: 1. } },
+            Vertex { pos : Vec2 { x:  1.0, y:  1.0 }, uv: Vec2 { x: 1., y: 0. } },
+            Vertex { pos : Vec2 { x: -1.0, y:  1.0 }, uv: Vec2 { x: 0., y: 0. } },
+        ];
+        let vertex_buffer = ctx.new_buffer(
+            BufferType::VertexBuffer,
+            BufferUsage::Immutable,
+            BufferSource::slice(&vertices),
+        );
+
+        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+        let index_buffer = ctx.new_buffer(
+            BufferType::IndexBuffer,
+            BufferUsage::Immutable,
+            BufferSource::slice(&indices),
+        );
+
+        let texture = ctx.new_texture_from_rgba8(width as u16, height as u16, unsafe {
+            std::slice::from_raw_parts(back_buffer.pixel_data.as_ptr() as *const u8, back_buffer.pixel_data.len() * 4)
+        });
+
+        ctx.texture_set_filter(texture, FilterMode::Nearest, MipmapFilterMode::None);
+
+        let bindings = Bindings {
+            vertex_buffers: vec![vertex_buffer],
+            index_buffer: index_buffer,
+            images: vec![texture],
+        };
+
+        let shader = ctx
+            .new_shader(
+                ShaderSource::Glsl {
+                    vertex: shader::GL_VERTEX,
+                    fragment: shader::GL_FRAGMENT,
+                },
+                shader::meta(),
+            )
+            .unwrap();
+        let pipeline = ctx.new_pipeline(
+            &[BufferLayout::default()],
+            &[
+                VertexAttribute::new("in_pos", VertexFormat::Float2),
+                VertexAttribute::new("in_uv", VertexFormat::Float2),
+            ],
+            shader,
+        );
+
+        PGE { 
+            screen_width: width, 
+            screen_height: height, 
+            draw_target: vec![back_buffer], 
+            pixel_width: 1, 
+            pixel_height: 1, 
+            pipeline, bindings, 
+            current_target: 0, 
+            pixel_mode: PixelMode::Normal, 
+            blend_factor: 1.0, 
+            func_pixel_mode: None, 
+            font: PGE::construct_font_sheet(),
+            //layers: vec![ Layer{ offset: Vec2::ZERO, scale: Vec2::ONE, show: true, update: true, surface: Renderable {}, decal_instances: vec![], tint: BLANK, id: 0 }], 
+            ctx,
+            accumulator: 0.0,
+            current_time: date::now(),
+            dt: 1.0 / 60.0,
+            time: 0.0,
+            frames: 0,
+            fixed_frames: 0,
         }
     }
 
-    pub fn start(pge: PGE<T>) {
-        // Construct the window
-        miniquad::start(conf::Conf::default(), |ctx| {
-            UserData::owning(pge, ctx)
+    pub fn create_decal(&mut self, sprite: &Sprite) -> Decal {
+        let id = self.create_texture(sprite.width, sprite.height);
+        self.update_texture(id, &sprite);
+        Decal { id, uv_scale: Vec2::ONE }
+    }
+
+    pub fn create_renderable<'a>(&mut self, width: u32, height: u32, filter: bool, clamp: bool) -> Renderable {
+        let sprite = Sprite::new(width, height);
+        let decal = self.create_decal(&sprite);
+        Renderable { sprite, decal }
+    }
+
+    pub fn create_texture(&mut self, width: u32, height: u32) -> TextureId {
+        let texture = self.ctx.new_texture(
+            TextureAccess::Static, 
+            TextureSource::Empty, 
+            TextureParams { 
+                kind: TextureKind::Texture2D, 
+                format: TextureFormat::RGBA8, 
+                wrap: TextureWrap::Clamp, 
+                min_filter: FilterMode::Linear, 
+                mag_filter: FilterMode::Linear, 
+                mipmap_filter: MipmapFilterMode::Linear, 
+                width: width, 
+                height: height, 
+                allocate_mipmaps: false 
+            });
+        texture
+    }
+
+    pub fn update_texture(&mut self, id: TextureId, sprite: &Sprite) {
+        self.ctx.texture_update(id, unsafe {
+            std::slice::from_raw_parts(sprite.pixel_data.as_ptr() as *const u8, sprite.pixel_data.len() * 4)
         });
     }
 
-    // Hardware Interfaces
-
-    pub fn is_focused(&mut self) -> bool {
-        false
-        /*if let Some(window) = &mut self.window   {
-            window.is_active()
-        } else { false }*/
-    }
-
-    /*
-    pub fn get_key(&mut self, k: Key) -> HWButton {
-        self.current_key_state[k as usize]
-    }
-    */
-    pub fn get_mouse_x(&mut self) -> i32 {
-        self.mouse_pos_x
-    }
-
-    pub fn get_mouse_y(&mut self) -> i32 {
-        self.mouse_pos_y
-    }
-
-    pub fn get_mouse(&mut self, button: usize) -> HWButton {
-        self.current_mouse_state[button]
-    }
-
-    fn update_mouse(&mut self, x: i32, y: i32) {
-        // Mouse coords come in screen space
-		// But leave in pixel space
-		self.mouse_pos_x = x / self.pixel_width;
-		self.mouse_pos_y = y / self.pixel_height;
-
-		if self.mouse_pos_x >= self.screen_width {
-			self.mouse_pos_x = self.screen_width - 1;
+    pub fn read_texture(&mut self, id: TextureId, sprite: &mut Sprite) {
+        let (tw, th) = self.ctx.texture_size(id);
+        if tw == sprite.width && th == sprite.height {
+            let bytes: &mut [u8] = unsafe {
+                std::slice::from_raw_parts_mut(sprite.pixel_data.as_ptr() as *mut u8, sprite.pixel_data.len() * 4)
+            };
+            self.ctx.texture_read_pixels(id, bytes);
         }
-		if self.mouse_pos_y >= self.screen_height {
-			self.mouse_pos_y = self.screen_height - 1;
-        }
-
-		if self.mouse_pos_x < 0
-			{ self.mouse_pos_x = 0; }
-		if self.mouse_pos_y < 0
-			{ self.mouse_pos_y = 0; }
     }
 
-    // Settings
-
-    pub fn set_pixel_mode(&mut self, pm: PixelMode) {
-        self.mode = pm;
+    pub fn delete_texture(&mut self, id: TextureId) {
+        self.ctx.delete_texture(id);
     }
 
-    // Draw Routines
+    //pub fn create_layer(&mut self) -> usize {
+    //    let mut l = Layer::create(self.screen_width, self.screen_height);
+    //    self.layers.push(l);
+    //    return self.layers.len() - 1;
+    //}
 
-    pub fn get_font(&mut self) -> Sprite {
-        self.font.clone()
+    pub fn draw_decal(&mut self, pos: Vec2, decal: &Decal, scale: Vec2, tint: &Color) {
+
     }
 
     #[inline]
     pub fn draw(&mut self, x: i32, y: i32, p: &Pixel) {
-        match self.mode {
+        match self.pixel_mode {
             PixelMode::Normal => { 
-                self.draw_target[self.current_draw_target].set_pixel(x, y, p); },
+                self.draw_target[self.current_target].set_pixel(x, y, p); },
             PixelMode::Mask => {
                 if p.a == 255 {
-                    self.draw_target[self.current_draw_target].set_pixel(x, y, p);
+                    self.draw_target[self.current_target].set_pixel(x, y, p);
                 }
             },
             PixelMode::Alpha => {
-                let d = self.draw_target[self.current_draw_target].get_pixel(x, y);
+                let d = self.draw_target[self.current_target].get_pixel(x, y);
                 let a = (p.a as f32 / 255.0) * self.blend_factor;
                 let c = 1.0 - a;
-                //let r = a * p.r as f32 + c * d.r as f32;
-                //let g = a * p.g as f32 + c * d.g as f32;
-                //let b = a * p.b as f32 + c * d.b as f32;
                 // cheat: use fused multiply add
                 let r = a.mul_add(p.r as f32, c * d.r as f32);
                 let g = a.mul_add(p.g as f32, c * d.g as f32);
                 let b = a.mul_add(p.b as f32, c * d.b as f32);
-                self.draw_target[self.current_draw_target].set_pixel(x, y, &Pixel::rgb(r as u8, g as u8, b as u8));
+                self.draw_target[self.current_target].set_pixel(x, y, &Pixel::rgb(r as u8, g as u8, b as u8));
             },
             PixelMode::Custom => {
                 if let Some(fpm) = self.func_pixel_mode {
-                    fpm(x, y, &self.draw_target[self.current_draw_target].get_pixel(x, y), p);
+                    fpm(x, y, &self.draw_target[self.current_target].get_pixel(x, y), p);
                 }
             }
         }
     }
 
+    #[rustfmt::skip]
     pub fn draw_line(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, p: &Pixel) {
         let mut x = x1;
         let mut y = y1;
@@ -342,10 +288,12 @@ impl<T: 'static> PGE<T> {
         let mut err = if dx > dy { dx / 2 } else { -dy / 2 };
 
         loop {
-            //buffer[(y * (WIDTH as i32) + x) as usize] = color;
             self.draw(x, y, p);
-            if x == x2 && y == y2 { break };
-            if x == x2 || y == y2 { break };
+            //self.back_buffer[(y * self.width as i32 + x) as usize] = *p;
+            if sx > 0 && sy > 0 { if x >= x2 && y >= y2 { break }};
+            if sx > 0 && sy < 0 { if x >= x2 && y <= y2 { break }};
+            if sx < 0 && sy > 0 { if x <= x2 && y >= y2 { break }};
+            if sx < 0 && sy < 0 { if x <= x2 && y <= y2 { break }};
             if err > -dx {err = err - dy; x = x + sx; }
             if err < dy  {err = err + dx; y = y + sy; }        
         }
@@ -383,25 +331,25 @@ impl<T: 'static> PGE<T> {
 		while y0 >= x0
 		{
             // Modified to draw scan-lines instead of edges
-            if y-y0 > 0 && y-y0 < self.screen_height {
+            if y-y0 > 0 && y-y0 < self.screen_height as i32 {
                 if scanline_rendered[(y - y0) as usize] == false {
                     self.draw_line(x - x0, y - y0, x + x0, y - y0, p);
                     scanline_rendered[(y - y0) as usize] = true;
                 }
             }
-            if y-x0 > 0 && y-x0 < self.screen_height {
+            if y-x0 > 0 && y-x0 < self.screen_height as i32 {
                 if scanline_rendered[(y - x0) as usize] == false {
                     self.draw_line(x - y0, y - x0, x + y0, y - x0, p);
                     scanline_rendered[(y - x0) as usize] = true;
                 }
             }
-            if y+y0 > 0 && y+y0 < self.screen_height {
+            if y+y0 > 0 && y+y0 < self.screen_height as i32 {
                 if scanline_rendered[(y + y0) as usize] == false {
                     self.draw_line(x - x0, y + y0, x + x0, y + y0, p);
                     scanline_rendered[(y + y0) as usize] = true;
                 }
             }
-            if y+x0 > 0 && y+x0 < self.screen_height {
+            if y+x0 > 0 && y+x0 < self.screen_height as i32 {
                 if scanline_rendered[(y + x0) as usize] == false {
                     self.draw_line(x - y0, y + x0, x + y0, y + x0, p);
                     scanline_rendered[(y + x0) as usize] = true;
@@ -462,10 +410,10 @@ impl<T: 'static> PGE<T> {
         if cross > 0 { std::mem::swap(&mut v1, &mut v2) }
         
         // Compute triangle bounding box and clip to screen bounds
-        let min_x = cmp::max(cmp::min(cmp::min(v0.0, v1.0), v2.0), 0);
-        let max_x = cmp::min(cmp::max(cmp::max(v0.0, v1.0), v2.0), self.screen_width as i32 - 1);
-        let min_y = cmp::max(cmp::min(cmp::min(v0.1, v1.1), v2.1), 0);
-        let max_y = cmp::min(cmp::max(cmp::max(v0.1, v1.1), v2.1), self.screen_height as i32 - 1);
+        let min_x = max(min(min(v0.0, v1.0), v2.0), 0);
+        let max_x = min(max(max(v0.0, v1.0), v2.0), self.screen_width as i32 - 1);
+        let min_y = max(min(min(v0.1, v1.1), v2.1), 0);
+        let max_y = min(max(max(v0.1, v1.1), v2.1), self.screen_height as i32 - 1);
 
         // Triangle setup
         let a01 = v0.1 - v1.1;
@@ -566,8 +514,8 @@ impl<T: 'static> PGE<T> {
         let mut sx: i32 = 0;
         let mut sy: i32 = 0;
 
-        if col.a != 255 { self.set_pixel_mode(PixelMode::Alpha); }
-        else { self.set_pixel_mode(PixelMode::Mask); }
+        if col.a != 255 { self.pixel_mode = PixelMode::Alpha; }
+        else { self.pixel_mode = PixelMode::Mask; }
 
         for c in text.chars() {
             if c == '\n' {
@@ -607,41 +555,122 @@ impl<T: 'static> PGE<T> {
     }
 
     pub fn clear(&mut self, p: &Pixel) {
-        // NOTE: sloooooooow!!!!!
-        /*
-        for y in 0..self.screen_height {
-            for x in 0..self.screen_width {
-                self.draw_target[self.current_draw_target].set_pixel(x as i32, y as i32, &p);
-            }
+        self.draw_target[self.current_target].pixel_data.fill(*p);
+    }
+
+    fn construct_font_sheet() -> Sprite {
+        let data = include_bytes!("../font.png");
+        let image = image::load_from_memory_with_format(data, image::ImageFormat::Png).unwrap();
+        let raw_image = image.as_bytes();
+        let mut pix_data: Vec<Pixel> = Vec::with_capacity(6144);
+        let mut k = 0;
+        for _ in 0..48 {
+                for _ in 0..128 {
+                    let r = raw_image[k];
+                    let g = raw_image[k+1];
+                    let b = raw_image[k+2];
+                    let a = raw_image[k+3];
+                    pix_data.push(Pixel::rgba(r, g, b, a));
+                    k += 4;
+                }
         }
-        */
-        // Much faster, but still might be slow?
-        //self.draw_target[self.current_draw_target].clear(p.clone());
-        // Proper way, adds about 30 fps
-        for i in self.draw_target[self.current_draw_target].data.iter_mut() { *i = p.clone(); }
+
+        Sprite {
+            width: 128,
+            height: 48,
+            sample_mode: Mode::Normal,
+            pixel_data: pix_data
+        }
+    }
+
+    pub fn render(&mut self) {
+        self.ctx.texture_update(self.bindings.images[0], unsafe {
+            std::slice::from_raw_parts(self.draw_target[self.current_target].pixel_data.as_ptr() as *const u8, self.draw_target[self.current_target].pixel_data.len() * 4)
+        });
+
+        self.ctx.begin_default_pass(Default::default());
+
+        self.ctx.apply_pipeline(&self.pipeline);
+        self.ctx.apply_bindings(&self.bindings);
+        self.ctx.draw(0, 6, 1);
+        self.ctx.end_render_pass();
+
+        self.ctx.commit_frame();
+
+        //
     }
 }
 
-fn construct_font_sheet() -> Sprite {
-    let data = include_bytes!("font.png");
-    let image = image::load_from_memory_with_format(data, image::ImageFormat::PNG).unwrap();
-    let raw_image = image.raw_pixels();
-    let mut pix_data: Vec<Pixel> = Vec::with_capacity(6144);
-    let mut k = 0;
-    for _ in 0..48 {
-            for _ in 0..128 {
-                let r = raw_image[k];
-                let g = raw_image[k+1];
-                let b = raw_image[k+2];
-                let a = raw_image[k+3];
-                pix_data.push(Pixel::rgba(r, g, b, a));
-                k += 4;
+pub struct App<T> {
+    pub pge: PGE,
+    pub game: Option<Box<dyn GameLoop<GameType = T>>>,
+}
+
+impl<T> EventHandler for App<T> where T: GameLoop<GameType = T> + 'static {
+    fn update(&mut self) {
+        if let Some(game) = &mut self.game {
+            let new_time = date::now();
+            let frame_time = new_time - self.pge.current_time;
+            let dt = self.pge.dt;
+            self.pge.current_time = new_time;
+            self.pge.accumulator += frame_time;
+
+            // we always call update at max frame rate
+            game.update(&mut self.pge, frame_time);
+            self.pge.frames += 1;
+
+            // fixed update is only called at a fixed rate
+            while self.pge.accumulator >= frame_time {
+                game.fixed_update(&mut self.pge, dt);
+                self.pge.accumulator -= dt;
+                self.pge.time += dt;
+                self.pge.fixed_frames += 1;
             }
+        } else {
+            self.game = Some(Box::new(T::init(&mut self.pge)))
+        }
     }
 
-    Sprite {
-        width: 128,
-        height: 48,
-        data: pix_data
+    fn draw(&mut self) {
+        self.pge.render();
+    }
+}
+
+#[repr(C)]
+struct Vertex {
+    pos: Vec2,
+    uv: Vec2,
+}
+
+
+
+mod shader {
+    use miniquad::*;
+
+    pub const GL_VERTEX: &str = r#"#version 100
+    attribute vec2 in_pos;
+    attribute vec2 in_uv;
+
+    varying lowp vec2 texcoord;
+
+    void main() {
+        gl_Position = vec4(in_pos, 0, 1);
+        texcoord = in_uv;
+    }"#;
+
+    pub const GL_FRAGMENT: &str = r#"#version 100
+    varying lowp vec2 texcoord;
+
+    uniform sampler2D tex;
+
+    void main() {
+        gl_FragColor = texture2D(tex, texcoord);
+    }"#;
+
+    pub fn meta() -> ShaderMeta {
+        ShaderMeta {
+            images: vec!["tex".to_string()],
+            uniforms: UniformBlockLayout { uniforms: vec![] },
+        }
     }
 }
