@@ -12,17 +12,3 @@ pub struct Layer {
     pub tint: Color,
     pub id: usize,
 }
-
-//impl<'a> Layer<'a> {
-//    pub fn create(width: usize, height: usize) -> Self {
-//        Layer { 
-//            offset: Vec2::ZERO, 
-//            scale: Vec2::ONE, 
-//            show: false, 
-//            update: false, 
-//            surface: Renderable::create(width, height, filter, clamp), 
-//            decal_instances: vec![], 
-//            tint: WHITE, 
-//            id: 0 }
-//    }
-//}

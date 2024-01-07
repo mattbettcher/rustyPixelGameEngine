@@ -84,8 +84,6 @@ pub struct Renderable {
 pub struct PGE {
     pub screen_width: usize,
     pub screen_height: usize,
-    //pub draw_target: &'a Sprite,
-    //pub current_target: usize,
     pub pixel_mode: PixelMode,
     pub blend_factor: f32,
     pub func_pixel_mode: Option<fn(x: i32, y: i32, p1: &Pixel, p2: &Pixel)>,
@@ -100,6 +98,7 @@ pub struct PGE {
     pipeline: Pipeline,
     bindings: Bindings,
     ctx: Box<dyn RenderingBackend>,
+    inv_screen_size: Vec2,
 
     // timing stuff
     accumulator: f64,
@@ -190,11 +189,9 @@ impl PGE {
         PGE { 
             screen_width: width, 
             screen_height: height, 
-            //draw_target: &back_buffer, 
             pixel_width: pix_width as i32, 
             pixel_height: pix_height as i32, 
             pipeline, bindings, 
-            //current_target: 0, 
             pixel_mode: PixelMode::Normal, 
             blend_factor: 1.0, 
             func_pixel_mode: None, 
@@ -205,7 +202,14 @@ impl PGE {
                     scale: Vec2::ONE, 
                     show: true, 
                     update: true, 
-                    surface: Renderable { sprite: back_buffer, decal: Decal { id: bb_texture, uv_scale: Vec2::ONE } },
+                    surface: Renderable { 
+                        sprite: back_buffer, 
+                        decal: Decal { 
+                            id: bb_texture, 
+                            uv_scale: Vec2::ONE,
+                            width: width as u32,
+                            height: height as u32,
+                        }},
                     decal_instances: vec![], 
                     tint: BLANK, 
                     id: 0 }
@@ -219,6 +223,15 @@ impl PGE {
             frames: 0,
             fixed_frames: 0,
             mouse_pos: IVec2::ZERO,
+            inv_screen_size: vec2(1.0 / width as f32, 1.0 / height as f32)
+        }
+    }
+
+    pub fn set_draw_target(&mut self, layer: usize, dirty: bool) {
+        if layer < self.layers.len() {
+            // we could set a draw target, but instead just keep track of the layer
+            self.layers[layer].update = dirty;
+            self.current_layer = layer;
         }
     }
 
@@ -233,7 +246,7 @@ impl PGE {
     pub fn create_decal(&mut self, sprite: &Sprite) -> Decal {
         let id = self.create_texture(sprite.width, sprite.height);
         self.update_texture(id, &sprite);
-        Decal { id, uv_scale: Vec2::ONE }
+        Decal { id, uv_scale: Vec2::ONE, width: sprite.width, height: sprite.height }
     }
 
     pub fn create_renderable(&mut self, width: u32, height: u32, filter: bool, clamp: bool) -> Renderable {
@@ -280,22 +293,49 @@ impl PGE {
         self.ctx.delete_texture(id);
     }
 
-    //pub fn create_layer(&mut self) -> usize {
-    //    let mut l = Layer::create(self.screen_width, self.screen_height);
-    //    self.layers.push(l);
-    //    return self.layers.len() - 1;
-    //}
+    pub fn create_layer(&mut self) -> usize {
+        let layer = Layer { 
+            offset: Vec2::ZERO, 
+            scale: Vec2::ONE, 
+            show: false, 
+            update: false, 
+            surface: self.create_renderable(self.screen_width as u32, self.screen_height as u32, false, true), 
+            decal_instances: vec![], 
+            tint: WHITE, 
+            id: self.layers.len()
+        };
+        self.layers.push(layer);
+        return self.layers.len() - 1;
+    }
 
     pub fn draw_decal(&mut self, pos: Vec2, decal: &Decal, scale: Vec2, tint: &Color) {
+        let screen_space_pos = vec2(
+            (pos.x * self.inv_screen_size.x) * 2.0 - 1.0, 
+            (pos.x * self.inv_screen_size.x) * 2.0 - 1.0);
+        let screen_space_dim = vec2(
+            screen_space_pos.x + (2.0 * decal.width as f32 * self.inv_screen_size.x) * scale.x,
+            screen_space_pos.y - (2.0 * decal.height as f32 * self.inv_screen_size.y) * scale.y,
+        );
 
+        let di = DecalInstance { 
+            pos: vec![screen_space_pos, vec2(screen_space_pos.x, screen_space_dim.y), screen_space_dim, vec2(screen_space_dim.x, screen_space_pos.y)], 
+            uv: vec![vec2(0., 0.), vec2(0., 1.), vec2(1., 1.), vec2(1., 0.)], 
+            w: vec![1.0, 1.0, 1.0, 1.0], 
+            tint: *tint, 
+            mode: DecalMode::Normal,    // TODO: get this from decal mode
+            structure: DecalStructure::Fan  // TODO:  
+        };
+
+        self.layers[self.current_layer].decal_instances.push(di);
     }
 
     #[inline]
     pub fn draw(&mut self, x: i32, y: i32, p: &Pixel) {
         match self.pixel_mode {
-            PixelMode::Normal => { 
-                self.layers[self.current_layer].surface.sprite.set_pixel(x, y, p);
-                //self.draw_target[self.current_target].set_pixel(x, y, p); },
+            PixelMode::Normal => {
+                if self.current_layer < self.layers.len() {
+                    self.layers[self.current_layer].surface.sprite.set_pixel(x, y, p);
+                }
             }
             PixelMode::Mask => {
                 if p.a == 255 {
@@ -332,7 +372,6 @@ impl PGE {
 
         loop {
             self.draw(x, y, p);
-            //self.back_buffer[(y * self.width as i32 + x) as usize] = *p;
             if sx > 0 && sy > 0 { if x >= x2 && y >= y2 { break }};
             if sx > 0 && sy < 0 { if x >= x2 && y <= y2 { break }};
             if sx < 0 && sy > 0 { if x <= x2 && y >= y2 { break }};

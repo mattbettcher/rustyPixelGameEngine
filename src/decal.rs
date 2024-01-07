@@ -22,10 +22,12 @@ pub enum DecalStructure {
 pub struct Decal {
     pub id: TextureId,
     pub uv_scale: Vec2,
+    pub width: u32,
+    pub height: u32,
 }
 
 pub struct DecalInstance {
-    pub decal: Decal,
+    //pub decal: Decal,
     pub pos: Vec<Vec2>,
     pub uv: Vec<Vec2>,
     pub w: Vec<f32>,
