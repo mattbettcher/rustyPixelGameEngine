@@ -1,23 +1,22 @@
 use std::cmp::{max, min};
 
+use layer::Layer;
 use miniquad::*;
 use glam::*;
 //use renderable::Renderable;
 pub use sprite::*;
 pub use decal::*;
 
-mod renderable;
 mod layer;
 mod sprite;
 mod decal;
 
+#[allow(unused_variables)]
 pub trait GameLoop {
     type GameType;
     
     fn init(pge: &mut PGE) -> Self::GameType where Self: Sized;
-    #[allow(unused_variables)]
     fn update(&mut self, pge: &mut PGE, dt: f64) {}
-    #[allow(unused_variables)]
     fn fixed_update(&mut self, pge: &mut PGE, dt: f64) {}
 }
 
@@ -85,15 +84,16 @@ pub struct Renderable {
 pub struct PGE {
     pub screen_width: usize,
     pub screen_height: usize,
-    pub draw_target: Vec<Sprite>,
-    pub current_target: usize,
+    //pub draw_target: &'a Sprite,
+    //pub current_target: usize,
     pub pixel_mode: PixelMode,
     pub blend_factor: f32,
     pub func_pixel_mode: Option<fn(x: i32, y: i32, p1: &Pixel, p2: &Pixel)>,
     pub font: Sprite,
 
     /// Engine internal stuff
-    //layers: Vec<Layer<'a>>,
+    layers: Vec<Layer>,
+    current_layer: usize,
     //keyboard_map: HashMap<> TODO:
     pixel_width: i32,
     pixel_height: i32,
@@ -132,7 +132,7 @@ impl PGE {
         });
     }
 
-    pub fn new(width: usize, height: usize, pix_width: usize, pix_height: usize) -> Self {
+    fn new(width: usize, height: usize, pix_width: usize, pix_height: usize) -> Self {
 
         let mut ctx = window::new_rendering_backend();
         let back_buffer = Sprite::new(width as u32, height as u32);
@@ -157,16 +157,16 @@ impl PGE {
             BufferSource::slice(&indices),
         );
 
-        let texture = ctx.new_texture_from_rgba8(width as u16, height as u16, unsafe {
+        let bb_texture = ctx.new_texture_from_rgba8(width as u16, height as u16, unsafe {
             std::slice::from_raw_parts(back_buffer.pixel_data.as_ptr() as *const u8, back_buffer.pixel_data.len() * 4)
         });
 
-        ctx.texture_set_filter(texture, FilterMode::Nearest, MipmapFilterMode::None);
+        ctx.texture_set_filter(bb_texture, FilterMode::Nearest, MipmapFilterMode::None);
 
         let bindings = Bindings {
             vertex_buffers: vec![vertex_buffer],
             index_buffer: index_buffer,
-            images: vec![texture],
+            images: vec![bb_texture],
         };
 
         let shader = ctx
@@ -190,16 +190,27 @@ impl PGE {
         PGE { 
             screen_width: width, 
             screen_height: height, 
-            draw_target: vec![back_buffer], 
+            //draw_target: &back_buffer, 
             pixel_width: pix_width as i32, 
             pixel_height: pix_height as i32, 
             pipeline, bindings, 
-            current_target: 0, 
+            //current_target: 0, 
             pixel_mode: PixelMode::Normal, 
             blend_factor: 1.0, 
             func_pixel_mode: None, 
             font: PGE::construct_font_sheet(),
-            //layers: vec![ Layer{ offset: Vec2::ZERO, scale: Vec2::ONE, show: true, update: true, surface: Renderable {}, decal_instances: vec![], tint: BLANK, id: 0 }], 
+            layers: vec![ 
+                Layer { 
+                    offset: Vec2::ZERO, 
+                    scale: Vec2::ONE, 
+                    show: true, 
+                    update: true, 
+                    surface: Renderable { sprite: back_buffer, decal: Decal { id: bb_texture, uv_scale: Vec2::ONE } },
+                    decal_instances: vec![], 
+                    tint: BLANK, 
+                    id: 0 }
+                ], 
+            current_layer: 0,
             ctx,
             accumulator: 0.0,
             current_time: date::now(),
@@ -225,7 +236,7 @@ impl PGE {
         Decal { id, uv_scale: Vec2::ONE }
     }
 
-    pub fn create_renderable<'a>(&mut self, width: u32, height: u32, filter: bool, clamp: bool) -> Renderable {
+    pub fn create_renderable(&mut self, width: u32, height: u32, filter: bool, clamp: bool) -> Renderable {
         let sprite = Sprite::new(width, height);
         let decal = self.create_decal(&sprite);
         Renderable { sprite, decal }
@@ -283,26 +294,28 @@ impl PGE {
     pub fn draw(&mut self, x: i32, y: i32, p: &Pixel) {
         match self.pixel_mode {
             PixelMode::Normal => { 
-                self.draw_target[self.current_target].set_pixel(x, y, p); },
+                self.layers[self.current_layer].surface.sprite.set_pixel(x, y, p);
+                //self.draw_target[self.current_target].set_pixel(x, y, p); },
+            }
             PixelMode::Mask => {
                 if p.a == 255 {
-                    self.draw_target[self.current_target].set_pixel(x, y, p);
+                    //self.draw_target[self.current_target].set_pixel(x, y, p);
                 }
             },
             PixelMode::Alpha => {
-                let d = self.draw_target[self.current_target].get_pixel(x, y);
-                let a = (p.a as f32 / 255.0) * self.blend_factor;
-                let c = 1.0 - a;
-                // cheat: use fused multiply add
-                let r = a.mul_add(p.r as f32, c * d.r as f32);
-                let g = a.mul_add(p.g as f32, c * d.g as f32);
-                let b = a.mul_add(p.b as f32, c * d.b as f32);
-                self.draw_target[self.current_target].set_pixel(x, y, &Pixel::rgb(r as u8, g as u8, b as u8));
+                //let d = self.draw_target[self.current_target].get_pixel(x, y);
+                //let a = (p.a as f32 / 255.0) * self.blend_factor;
+                //let c = 1.0 - a;
+                //// cheat: use fused multiply add
+                //let r = a.mul_add(p.r as f32, c * d.r as f32);
+                //let g = a.mul_add(p.g as f32, c * d.g as f32);
+                //let b = a.mul_add(p.b as f32, c * d.b as f32);
+                //self.draw_target[self.current_target].set_pixel(x, y, &Pixel::rgb(r as u8, g as u8, b as u8));
             },
             PixelMode::Custom => {
-                if let Some(fpm) = self.func_pixel_mode {
-                    fpm(x, y, &self.draw_target[self.current_target].get_pixel(x, y), p);
-                }
+                //if let Some(fpm) = self.func_pixel_mode {
+                //    fpm(x, y, &self.draw_target[self.current_target].get_pixel(x, y), p);
+                //}
             }
         }
     }
@@ -585,7 +598,8 @@ impl PGE {
     }
 
     pub fn clear(&mut self, p: &Pixel) {
-        self.draw_target[self.current_target].pixel_data.fill(*p);
+        //self.draw_target[self.current_target].pixel_data.fill(*p);
+        self.layers[self.current_layer].surface.sprite.pixel_data.fill(*p);
     }
 
     fn construct_font_sheet() -> Sprite {
@@ -615,7 +629,8 @@ impl PGE {
 
     pub fn render(&mut self) {
         self.ctx.texture_update(self.bindings.images[0], unsafe {
-            std::slice::from_raw_parts(self.draw_target[self.current_target].pixel_data.as_ptr() as *const u8, self.draw_target[self.current_target].pixel_data.len() * 4)
+            //std::slice::from_raw_parts(self.draw_target[self.current_target].pixel_data.as_ptr() as *const u8, self.draw_target[self.current_target].pixel_data.len() * 4)
+            std::slice::from_raw_parts(self.layers[self.current_layer].surface.sprite.pixel_data.as_ptr() as *const u8, self.layers[self.current_layer].surface.sprite.pixel_data.len() * 4)
         });
 
         self.ctx.begin_default_pass(Default::default());

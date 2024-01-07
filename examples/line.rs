@@ -20,11 +20,5 @@ impl GameLoop for GameState {
 }
 
 fn main() {
-    // what we had
-    //let mut pge = PGE::construct("Line", 640, 480, 1, 1);
-    //pge.start(&mut gs);
-    //let mut conf = conf::Conf::default();
-
-    // Soon...
     PGE::construct::<GameState>("Line", 640, 480, 2, 2);
 }
