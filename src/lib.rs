@@ -329,33 +329,38 @@ impl PGE {
         self.layers[self.current_layer].decal_instances.push(di);
     }
 
+    // render the layers surface and all decal instances
+    fn render_layer(&mut self) {
+
+    }
+
     #[inline]
     pub fn draw(&mut self, x: i32, y: i32, p: &Pixel) {
-        match self.pixel_mode {
-            PixelMode::Normal => {
-                if self.current_layer < self.layers.len() {
+        if self.current_layer < self.layers.len() {
+            match self.pixel_mode {
+                PixelMode::Normal => {
                     self.layers[self.current_layer].surface.sprite.set_pixel(x, y, p);
                 }
-            }
-            PixelMode::Mask => {
-                if p.a == 255 {
-                    //self.draw_target[self.current_target].set_pixel(x, y, p);
+                PixelMode::Mask => {
+                    if p.a == 255 {
+                        self.layers[self.current_layer].surface.sprite.set_pixel(x, y, p);
+                    }
+                },
+                PixelMode::Alpha => {
+                    let d = self.layers[self.current_layer].surface.sprite.get_pixel(x, y);
+                    let a = (p.a as f32 / 255.0) * self.blend_factor;
+                    let c = 1.0 - a;
+                    // cheat: use fused multiply add
+                    let r = a.mul_add(p.r as f32, c * d.r as f32);
+                    let g = a.mul_add(p.g as f32, c * d.g as f32);
+                    let b = a.mul_add(p.b as f32, c * d.b as f32);
+                    self.layers[self.current_layer].surface.sprite.set_pixel(x, y, &Pixel::rgb(r as u8, g as u8, b as u8));
+                },
+                PixelMode::Custom => {
+                    if let Some(fpm) = self.func_pixel_mode {
+                        fpm(x, y, &self.layers[self.current_layer].surface.sprite.get_pixel(x, y), p);
+                    }
                 }
-            },
-            PixelMode::Alpha => {
-                //let d = self.draw_target[self.current_target].get_pixel(x, y);
-                //let a = (p.a as f32 / 255.0) * self.blend_factor;
-                //let c = 1.0 - a;
-                //// cheat: use fused multiply add
-                //let r = a.mul_add(p.r as f32, c * d.r as f32);
-                //let g = a.mul_add(p.g as f32, c * d.g as f32);
-                //let b = a.mul_add(p.b as f32, c * d.b as f32);
-                //self.draw_target[self.current_target].set_pixel(x, y, &Pixel::rgb(r as u8, g as u8, b as u8));
-            },
-            PixelMode::Custom => {
-                //if let Some(fpm) = self.func_pixel_mode {
-                //    fpm(x, y, &self.draw_target[self.current_target].get_pixel(x, y), p);
-                //}
             }
         }
     }
@@ -664,6 +669,10 @@ impl PGE {
             sample_mode: Mode::Normal,
             pixel_data: pix_data
         }
+    }
+
+    fn render_decal_instance(&mut self) {
+
     }
 
     pub fn render(&mut self) {
