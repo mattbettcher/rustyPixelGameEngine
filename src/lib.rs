@@ -655,25 +655,7 @@ impl PGE {
         let data = include_bytes!("../font.png");
         let image = image::load_from_memory_with_format(data, image::ImageFormat::Png).unwrap();
         let raw_image = image.as_bytes();
-        let mut pix_data: Vec<Pixel> = Vec::with_capacity(6144);
-        let mut k = 0;
-        for _ in 0..48 {
-                for _ in 0..128 {
-                    let r = raw_image[k];
-                    let g = raw_image[k+1];
-                    let b = raw_image[k+2];
-                    let a = raw_image[k+3];
-                    pix_data.push(Pixel::rgba(r, g, b, a));
-                    k += 4;
-                }
-        }
-
-        Sprite {
-            width: 128,
-            height: 48,
-            sample_mode: Mode::Normal,
-            pixel_data: pix_data
-        }
+        Sprite::new_with_data(128, 48, raw_image)
     }
 
     fn render_decal_instance(&mut self) {
