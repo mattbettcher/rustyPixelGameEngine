@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::{cmp::{max, min}, rc::Rc};
 
 use layer::Layer;
 use miniquad::*;
@@ -77,7 +77,7 @@ pub enum PixelMode {
 }
 
 pub struct Renderable {
-    sprite: Sprite,
+    sprite: SpriteRef,
     decal: Decal,
 }
 
@@ -156,8 +156,11 @@ impl PGE {
             BufferSource::slice(&indices),
         );
 
+        let bb_sprite_ref = SpriteRef::new(back_buffer);
+        let len = bb_sprite_ref.get_data_len();
+
         let bb_texture = ctx.new_texture_from_rgba8(width as u16, height as u16, unsafe {
-            std::slice::from_raw_parts(back_buffer.pixel_data.as_ptr() as *const u8, back_buffer.pixel_data.len() * 4)
+            std::slice::from_raw_parts(bb_sprite_ref.get_data_ptr(), len * 4)
         });
 
         ctx.texture_set_filter(bb_texture, FilterMode::Nearest, MipmapFilterMode::None);
@@ -186,6 +189,9 @@ impl PGE {
             shader,
         );
 
+        let bb_sprite_ref2 = Rc::downgrade(&bb_sprite_ref.0);
+
+
         PGE { 
             screen_width: width, 
             screen_height: height, 
@@ -203,9 +209,9 @@ impl PGE {
                     show: true, 
                     update: true, 
                     surface: Renderable { 
-                        sprite: back_buffer, 
+                        sprite: bb_sprite_ref, 
                         decal: Decal { 
-                            id: bb_texture, 
+                            sprite: bb_sprite_ref2,
                             uv_scale: Vec2::ONE,
                             width: width as u32,
                             height: height as u32,
@@ -243,17 +249,17 @@ impl PGE {
         self.mouse_pos.y
     }
 
-    pub fn create_decal(&mut self, sprite: &Sprite) -> Decal {
-        let id = self.create_texture(sprite.width, sprite.height);
-        self.update_texture(id, &sprite);
-        Decal { id, uv_scale: Vec2::ONE, width: sprite.width, height: sprite.height }
-    }
+    //pub fn create_decal(&mut self, sprite: &Sprite) -> Decal {
+    //    let id = self.create_texture(sprite.width, sprite.height);
+    //    self.update_texture(id, &sprite);
+    //    Decal { id, uv_scale: Vec2::ONE, width: sprite.width, height: sprite.height }
+    //}
 
-    pub fn create_renderable(&mut self, width: u32, height: u32, filter: bool, clamp: bool) -> Renderable {
-        let sprite = Sprite::new(width, height);
-        let decal = self.create_decal(&sprite);
-        Renderable { sprite, decal }
-    }
+    //pub fn create_renderable(&mut self, width: u32, height: u32, filter: bool, clamp: bool) -> Renderable {
+    //    let sprite = Sprite::new(width, height);
+    //    let decal = self.create_decal(&sprite);
+    //    Renderable { sprite, decal }
+    //}
 
     pub fn create_texture(&mut self, width: u32, height: u32) -> TextureId {
         let texture = self.ctx.new_texture(
@@ -293,41 +299,41 @@ impl PGE {
         self.ctx.delete_texture(id);
     }
 
-    pub fn create_layer(&mut self) -> usize {
-        let layer = Layer { 
-            offset: Vec2::ZERO, 
-            scale: Vec2::ONE, 
-            show: false, 
-            update: false, 
-            surface: self.create_renderable(self.screen_width as u32, self.screen_height as u32, false, true), 
-            decal_instances: vec![], 
-            tint: WHITE, 
-            id: self.layers.len()
-        };
-        self.layers.push(layer);
-        return self.layers.len() - 1;
-    }
+    //pub fn create_layer(&mut self) -> usize {
+    //    let layer = Layer { 
+    //        offset: Vec2::ZERO, 
+    //        scale: Vec2::ONE, 
+    //        show: false, 
+    //        update: false, 
+    //        surface: self.create_renderable(self.screen_width as u32, self.screen_height as u32, false, true), 
+    //        decal_instances: vec![], 
+    //        tint: WHITE, 
+    //        id: self.layers.len()
+    //    };
+    //    self.layers.push(layer);
+    //    return self.layers.len() - 1;
+    //}
 
-    pub fn draw_decal(&mut self, pos: Vec2, decal: &Decal, scale: Vec2, tint: &Color) {
-        let screen_space_pos = vec2(
-            (pos.x * self.inv_screen_size.x) * 2.0 - 1.0, 
-            (pos.x * self.inv_screen_size.x) * 2.0 - 1.0);
-        let screen_space_dim = vec2(
-            screen_space_pos.x + (2.0 * decal.width as f32 * self.inv_screen_size.x) * scale.x,
-            screen_space_pos.y - (2.0 * decal.height as f32 * self.inv_screen_size.y) * scale.y,
-        );
-
-        let di = DecalInstance { 
-            pos: vec![screen_space_pos, vec2(screen_space_pos.x, screen_space_dim.y), screen_space_dim, vec2(screen_space_dim.x, screen_space_pos.y)], 
-            uv: vec![vec2(0., 0.), vec2(0., 1.), vec2(1., 1.), vec2(1., 0.)], 
-            w: vec![1.0, 1.0, 1.0, 1.0], 
-            tint: *tint, 
-            mode: DecalMode::Normal,    // TODO: get this from decal mode
-            structure: DecalStructure::Fan  // TODO:  
-        };
-
-        self.layers[self.current_layer].decal_instances.push(di);
-    }
+    //pub fn draw_decal(&mut self, pos: Vec2, decal: &Decal, scale: Vec2, tint: &Color) {
+    //    let screen_space_pos = vec2(
+    //        (pos.x * self.inv_screen_size.x) * 2.0 - 1.0, 
+    //        (pos.x * self.inv_screen_size.x) * 2.0 - 1.0);
+    //    let screen_space_dim = vec2(
+    //        screen_space_pos.x + (2.0 * decal.width as f32 * self.inv_screen_size.x) * scale.x,
+    //        screen_space_pos.y - (2.0 * decal.height as f32 * self.inv_screen_size.y) * scale.y,
+    //    );
+//
+    //    let di = DecalInstance { 
+    //        pos: vec![screen_space_pos, vec2(screen_space_pos.x, screen_space_dim.y), screen_space_dim, vec2(screen_space_dim.x, screen_space_pos.y)], 
+    //        uv: vec![vec2(0., 0.), vec2(0., 1.), vec2(1., 1.), vec2(1., 0.)], 
+    //        w: vec![1.0, 1.0, 1.0, 1.0], 
+    //        tint: *tint, 
+    //        mode: DecalMode::Normal,    // TODO: get this from decal mode
+    //        structure: DecalStructure::Fan  // TODO:  
+    //    };
+//
+    //    self.layers[self.current_layer].decal_instances.push(di);
+    //}
 
     // render the layers surface and all decal instances
     fn render_layer(&mut self) {
@@ -642,8 +648,7 @@ impl PGE {
     }
 
     pub fn clear(&mut self, p: &Pixel) {
-        //self.draw_target[self.current_target].pixel_data.fill(*p);
-        self.layers[self.current_layer].surface.sprite.pixel_data.fill(*p);
+        self.layers[self.current_layer].surface.sprite.clear(*p);
     }
 
     fn construct_font_sheet() -> Sprite {
@@ -677,11 +682,10 @@ impl PGE {
 
     pub fn render(&mut self) {
         self.ctx.texture_update(self.bindings.images[0], unsafe {
-            if self.current_layer < self.layers.len() {
-                std::slice::from_raw_parts(self.layers[self.current_layer].surface.sprite.pixel_data.as_ptr() as *const u8, self.layers[self.current_layer].surface.sprite.pixel_data.len() * 4)
-            } else {
-                std::slice::from_raw_parts(self.layers[0].surface.sprite.pixel_data.as_ptr() as *const u8, self.layers[0].surface.sprite.pixel_data.len() * 4)
-            }
+            let layer = if self.current_layer < self.layers.len() { self.current_layer }
+            else { 0 };
+            let len = self.layers[layer].surface.sprite.get_data_len();
+            std::slice::from_raw_parts(self.layers[layer].surface.sprite.get_data_ptr(), len * 4)
         });
 
         self.ctx.begin_default_pass(Default::default());

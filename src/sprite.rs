@@ -1,18 +1,70 @@
+use std::{rc::Rc, cell::RefCell};
 use crate::*;
 
 
+#[derive(Debug, Clone)]
 pub enum Mode {
     Normal,
     Periodic,
     Clamp,
 }
 
+#[derive(Debug)]
 pub enum Flip {
     None,
     Horizontal,
     Vertical,
 }
 
+#[derive(Debug, Clone)]
+pub struct SpriteRef(pub Rc<RefCell<Sprite>>);
+
+impl SpriteRef {
+    // consumes sprite!
+    pub fn new(sprite: Sprite) -> SpriteRef {
+        SpriteRef(Rc::new(RefCell::new(sprite)))
+    }
+
+    #[inline]
+    pub fn get_pixel(&self, x: i32, y: i32) -> Pixel {
+        let sprite = self.0.borrow();
+        if x >= 0 && x < sprite.width as i32 && y >= 0 && y < sprite.height as i32 {
+            sprite.pixel_data[(y * sprite.width as i32 + x) as usize].clone()
+        } else {
+            Pixel::rgba(0,0,0,0)
+        }
+    }
+
+    #[inline]
+    pub fn set_pixel(&mut self, x: i32, y: i32, p: &Pixel) {
+        let width = self.0.borrow().width;
+        let height = self.0.borrow().height;
+        if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
+            if let Ok(sprite) = &mut self.0.try_borrow_mut() {
+                sprite.pixel_data[(y * width as i32 + x) as usize] = p.clone();
+            }
+        }
+    }
+
+    pub fn clear(&mut self, p: Pixel) {
+        let mut sprite = self.0.borrow_mut();
+        sprite.pixel_data.fill(p);
+    }
+
+    pub unsafe fn get_data_ptr(&self) -> *const u8 {
+        self.0.borrow().pixel_data.as_ptr() as *const u8
+    }
+
+    pub fn get_data_len(&self) -> usize {
+        self.0.borrow().pixel_data.len()
+    }
+
+    pub fn clone(&self) -> Rc<RefCell<Sprite>> {
+        self.0.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Sprite {
     pub width: u32,
     pub height: u32,

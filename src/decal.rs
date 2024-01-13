@@ -1,7 +1,10 @@
+use std::{rc::Weak, cell::RefCell};
+
 use miniquad::*;
 use glam::*;
 use crate::*;
 
+#[derive(Debug)]
 pub enum DecalMode {
     Normal,
     Additive,
@@ -12,6 +15,7 @@ pub enum DecalMode {
     Model3D,
 }
 
+#[derive(Debug)]
 pub enum DecalStructure {
     Line,
     Fan,
@@ -19,15 +23,17 @@ pub enum DecalStructure {
     List,
 }
 
+#[derive(Debug)]
 pub struct Decal {
-    pub id: TextureId,
+    pub sprite: Weak<RefCell<Sprite>>,
     pub uv_scale: Vec2,
     pub width: u32,
     pub height: u32,
 }
 
+#[derive(Debug)]
 pub struct DecalInstance {
-    //pub decal: Decal,
+    pub decal: Decal,
     pub pos: Vec<Vec2>,
     pub uv: Vec<Vec2>,
     pub w: Vec<f32>,
