@@ -162,7 +162,7 @@ impl PGE {
             BufferSource::slice(&indices),
         );
 
-        let bb_sprite_ref = SpriteRef::new(back_buffer);
+        let bb_sprite_ref = SpriteRef::new_from_sprite(back_buffer);
         let len = bb_sprite_ref.get_data_len();
 
         let bb_texture = ctx.new_texture_from_rgba8(width as u16, height as u16, unsafe {
@@ -218,6 +218,7 @@ impl PGE {
                         sprite: bb_sprite_ref, 
                         decal: Decal { 
                             sprite: bb_sprite_ref2,
+                            texture_id: bb_texture,
                             uv_scale: Vec2::ONE,
                             width: width as u32,
                             height: height as u32,
@@ -254,12 +255,6 @@ impl PGE {
     pub fn get_mouse_y(&mut self) -> i32 {
         self.mouse_pos.y
     }
-
-    //pub fn create_decal(&mut self, sprite: &Sprite) -> Decal {
-    //    let id = self.create_texture(sprite.width, sprite.height);
-    //    self.update_texture(id, &sprite);
-    //    Decal { id, uv_scale: Vec2::ONE, width: sprite.width, height: sprite.height }
-    //}
 
     //pub fn create_renderable(&mut self, width: u32, height: u32, filter: bool, clamp: bool) -> Renderable {
     //    let sprite = Sprite::new(width, height);
@@ -755,9 +750,9 @@ pub const fn vert(pos: Vec2, uv: Vec2) -> Vertex {
 
 #[repr(C)]
 #[derive(Debug)]
-struct Vertex {
-    pos: Vec2,
-    uv: Vec2,
+pub struct Vertex {
+    pub pos: Vec2,
+    pub uv: Vec2,
 }
 
 mod shader {
