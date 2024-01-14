@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{rc::Rc, cell::{RefCell, Ref}};
 use crate::*;
 
 
@@ -20,9 +20,22 @@ pub enum Flip {
 pub struct SpriteRef(pub Rc<RefCell<Sprite>>);
 
 impl SpriteRef {
+    pub fn new(width: u32, height: u32) -> SpriteRef {
+        SpriteRef(Rc::new(RefCell::new(Sprite::new(width, height))))
+    }
+
+    pub fn new_with_data(width: u32, height: u32, data: &[u8]) -> SpriteRef {
+        SpriteRef(Rc::new(RefCell::new(Sprite::new_with_data(width, height, data))))
+    }
+
     // consumes sprite!
-    pub fn new(sprite: Sprite) -> SpriteRef {
+    pub fn new_from_sprite(sprite: Sprite) -> SpriteRef {
         SpriteRef(Rc::new(RefCell::new(sprite)))
+    }
+
+    #[inline]
+    pub fn get_sprite<'a>(&'a self) -> Ref<'a, Sprite> {
+        self.0.borrow()
     }
 
     #[inline]
@@ -53,6 +66,14 @@ impl SpriteRef {
 
     pub unsafe fn get_data_ptr(&self) -> *const u8 {
         self.0.borrow().pixel_data.as_ptr() as *const u8
+    }
+
+    pub fn width(&self) -> u32 {
+        self.0.borrow().width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.0.borrow().height
     }
 
     pub fn get_data_len(&self) -> usize {
