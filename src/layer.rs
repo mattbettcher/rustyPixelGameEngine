@@ -5,7 +5,7 @@ use crate::{decal::DecalInstance, *};
 /*
     Each layer should be almost fully self contained
 */
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct Layer {
     pub offset: Vec2,
     pub scale: Vec2,
@@ -109,21 +109,19 @@ impl Layer {
         }
     }
 
-    pub fn render(&mut self, pge: &mut PGE) {
-        pge.ctx.texture_update(self.bindings.images[0], unsafe {
-            let layer = if pge.current_layer < pge.layers.len() { pge.current_layer }
-            else { 0 };
-            let len = pge.layers[layer].surface.sprite.get_data_len();
-            std::slice::from_raw_parts(pge.layers[layer].surface.sprite.get_data_ptr(), len * 4)
+    pub fn render(&mut self, ctx: &mut Box<dyn RenderingBackend>) {
+        ctx.texture_update(self.bindings.images[0], unsafe {
+            let len = self.surface.sprite.get_data_len();
+            std::slice::from_raw_parts(self.surface.sprite.get_data_ptr(), len * 4)
         });
 
-        pge.ctx.begin_default_pass(Default::default());
+        ctx.begin_default_pass(Default::default());
 
-        pge.ctx.apply_pipeline(&self.pipeline);
-        pge.ctx.apply_bindings(&self.bindings);
-        pge.ctx.draw(0, 6, 1);
-        pge.ctx.end_render_pass();
+        ctx.apply_pipeline(&self.pipeline);
+        ctx.apply_bindings(&self.bindings);
+        ctx.draw(0, 6, 1);
+        ctx.end_render_pass();
 
-        pge.ctx.commit_frame();
+        ctx.commit_frame();
     }
 }

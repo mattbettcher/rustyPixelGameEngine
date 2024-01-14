@@ -3,7 +3,6 @@ use std::{cmp::{max, min}, rc::Rc};
 use layer::Layer;
 use miniquad::*;
 use glam::*;
-//use renderable::Renderable;
 pub use sprite::*;
 pub use decal::*;
 
@@ -82,7 +81,7 @@ pub enum PixelMode {
     Normal, Mask, Alpha, Custom
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct Renderable {
     sprite: SpriteRef,
     decal: Decal,
@@ -102,8 +101,6 @@ pub struct PGE {
     //keyboard_map: HashMap<> TODO:
     pixel_width: i32,
     pixel_height: i32,
-    //pipeline: Pipeline,
-    //bindings: Bindings,
     ctx: Box<dyn RenderingBackend>,
     inv_screen_size: Vec2,
 
@@ -203,13 +200,12 @@ impl PGE {
             screen_width: width, 
             screen_height: height, 
             pixel_width: pix_width as i32, 
-            pixel_height: pix_height as i32, 
-            //pipeline, bindings, 
+            pixel_height: pix_height as i32,
             pixel_mode: PixelMode::Normal, 
             blend_factor: 1.0, 
             func_pixel_mode: None, 
             font: PGE::construct_font_sheet(),
-            // first layer is created inline
+            // TODO: first layer is created inline as it currently requires pge to create one
             layers: vec![ 
                 Layer { 
                     offset: Vec2::ZERO, 
@@ -641,33 +637,9 @@ impl PGE {
         Sprite::new_with_data(128, 48, raw_image)
     }
 
-    fn render_decal_instance(&mut self) {
-
-    }
-
     pub fn render(&mut self) {
-        /*
-        self.ctx.texture_update(self.bindings.images[0], unsafe {
-            let layer = if self.current_layer < self.layers.len() { self.current_layer }
-            else { 0 };
-            let len = self.layers[layer].surface.sprite.get_data_len();
-            std::slice::from_raw_parts(self.layers[layer].surface.sprite.get_data_ptr(), len * 4)
-        });
-
-        self.ctx.begin_default_pass(Default::default());
-
-        self.ctx.apply_pipeline(&self.pipeline);
-        self.ctx.apply_bindings(&self.bindings);
-        self.ctx.draw(0, 6, 1);
-        self.ctx.end_render_pass();
-
-        self.ctx.commit_frame();
-        */
-        
-        // TODO: need to find a way without clone
-        for i in 0..self.layers.len() {
-            let mut layer = self.layers[i].clone();
-            layer.render(self);
+        for layer in &mut self.layers {
+            layer.render(&mut self.ctx);
         }
     }
 }
