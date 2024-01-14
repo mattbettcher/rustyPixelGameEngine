@@ -46,31 +46,37 @@ impl Pixel {
     }
 }
 
+#[inline(always)]
+#[must_use]
+pub const fn color(r: u8, g: u8, b: u8, a: u8) -> Color {
+    Color { r, g, b, a }
+}
+
 // Colors
-pub const WHITE: Pixel                  = Pixel{r:255, g:255, b:255, a:255};
-pub const GREY: Pixel                   = Pixel{r:192, g:192, b:192, a:255};
-pub const DARK_GREY: Pixel              = Pixel{r:128, g:128, b:128, a:255};
-pub const VERY_DARK_GREY: Pixel         = Pixel{r:64, g:64, b:64, a:255};
-pub const RED: Pixel                    = Pixel{r:255, g:0, b:0, a:255};
-pub const DARK_RED: Pixel               = Pixel{r:128, g:0, b:0, a:255};
-pub const VERY_DARK_RED: Pixel          = Pixel{r:64, g:0, b:0, a:255};
-pub const YELLOW: Pixel                 = Pixel{r:255, g:255, b:0, a:255};
-pub const DARK_YELLOW: Pixel            = Pixel{r:128, g:128, b:0, a:255};
-pub const VERY_DARK_YELLOW: Pixel       = Pixel{r:64, g:64, b:0, a:255};
-pub const GREEN: Pixel                  = Pixel{r:0, g:255, b:0, a:255};
-pub const DARK_GREEN: Pixel             = Pixel{r:0, g:128, b:0, a:255};
-pub const VERY_DARK_GREEN: Pixel        = Pixel{r:0, g:64, b:0, a:255};
-pub const CYAN: Pixel                   = Pixel{r:0, g:255, b:255, a:255};
-pub const DARK_CYAN: Pixel              = Pixel{r:0, g:128, b:128, a:255};
-pub const VERY_DARK_CYAN: Pixel         = Pixel{r:0, g:64, b:64, a:255};
-pub const BLUE: Pixel                   = Pixel{r:0, g:0, b:255, a:255};
-pub const DARK_BLUE: Pixel              = Pixel{r:0, g:0, b:128, a:255};
-pub const VERY_DARK_BLUE: Pixel         = Pixel{r:0, g:0, b:64, a:255};
-pub const MAGENTA: Pixel                = Pixel{r:255, g:0, b:255, a:255};
-pub const DARK_MAGENTA: Pixel           = Pixel{r:128, g:0, b:128, a:255};
-pub const VERY_DARK_MAGENTA: Pixel      = Pixel{r:64, g:0, b:64, a:255};
-pub const BLACK: Pixel                  = Pixel{r:0, g:0, b:0, a:255};
-pub const BLANK: Pixel                  = Pixel{r:0, g:0, b:0, a:0};
+pub const WHITE: Color                  = color(255, 255, 255, 255);
+pub const GREY: Color                   = color(192, 192, 192, 255);
+pub const DARK_GREY: Color              = color(128, 128, 128, 255);
+pub const VERY_DARK_GREY: Color         = color(64, 64, 64, 255);
+pub const RED: Color                    = color(255, 0, 0, 255);
+pub const DARK_RED: Color               = color(128, 0, 0, 255);
+pub const VERY_DARK_RED: Color          = color(64, 0, 0, 255);
+pub const YELLOW: Color                 = color(255, 255, 0, 255);
+pub const DARK_YELLOW: Color            = color(128, 128, 0, 255);
+pub const VERY_DARK_YELLOW: Color       = color(64, 64, 0, 255);
+pub const GREEN: Color                  = color(0, 255, 0, 255);
+pub const DARK_GREEN: Color             = color(0, 128, 0, 255);
+pub const VERY_DARK_GREEN: Color        = color(0, 64, 0, 255);
+pub const CYAN: Color                   = color(0, 255, 255, 255);
+pub const DARK_CYAN: Color              = color(0, 128, 128, 255);
+pub const VERY_DARK_CYAN: Color         = color(0, 64, 64, 255);
+pub const BLUE: Color                   = color(0, 0, 255, 255);
+pub const DARK_BLUE: Color              = color(0, 0, 128, 255);
+pub const VERY_DARK_BLUE: Color         = color(0, 0, 64, 255);
+pub const MAGENTA: Color                = color(255, 0, 255, 255);
+pub const DARK_MAGENTA: Color           = color(128, 0, 128, 255);
+pub const VERY_DARK_MAGENTA: Color      = color(64, 0, 64, 255);
+pub const BLACK: Color                  = color(0, 0, 0, 255);
+pub const BLANK: Color                  = color(0, 0, 0, 0);
 
 pub enum PixelMode {
     Normal, Mask, Alpha, Custom
@@ -136,12 +142,12 @@ impl PGE {
         let mut ctx = window::new_rendering_backend();
         let back_buffer = Sprite::new(width as u32, height as u32);
 
-        #[rustfmt::skip]
+        //#[rustfmt::skip]
         let vertices: [Vertex; 4] = [
-            Vertex { pos : Vec2 { x: -1.0, y: -1.0 }, uv: Vec2 { x: 0., y: 1. } },
-            Vertex { pos : Vec2 { x:  1.0, y: -1.0 }, uv: Vec2 { x: 1., y: 1. } },
-            Vertex { pos : Vec2 { x:  1.0, y:  1.0 }, uv: Vec2 { x: 1., y: 0. } },
-            Vertex { pos : Vec2 { x: -1.0, y:  1.0 }, uv: Vec2 { x: 0., y: 0. } },
+            vert(vec2(-1.0, -1.0), vec2(0., 1.)),
+            vert(vec2( 1.0, -1.0), vec2(1., 1.)),
+            vert(vec2( 1.0,  1.0), vec2(1., 0.)),
+            vert(vec2(-1.0,  1.0), vec2(0., 0.)),
         ];
         let vertex_buffer = ctx.new_buffer(
             BufferType::VertexBuffer,
@@ -314,26 +320,28 @@ impl PGE {
     //    return self.layers.len() - 1;
     //}
 
-    //pub fn draw_decal(&mut self, pos: Vec2, decal: &Decal, scale: Vec2, tint: &Color) {
-    //    let screen_space_pos = vec2(
-    //        (pos.x * self.inv_screen_size.x) * 2.0 - 1.0, 
-    //        (pos.x * self.inv_screen_size.x) * 2.0 - 1.0);
-    //    let screen_space_dim = vec2(
-    //        screen_space_pos.x + (2.0 * decal.width as f32 * self.inv_screen_size.x) * scale.x,
-    //        screen_space_pos.y - (2.0 * decal.height as f32 * self.inv_screen_size.y) * scale.y,
-    //    );
-//
-    //    let di = DecalInstance { 
-    //        pos: vec![screen_space_pos, vec2(screen_space_pos.x, screen_space_dim.y), screen_space_dim, vec2(screen_space_dim.x, screen_space_pos.y)], 
-    //        uv: vec![vec2(0., 0.), vec2(0., 1.), vec2(1., 1.), vec2(1., 0.)], 
-    //        w: vec![1.0, 1.0, 1.0, 1.0], 
-    //        tint: *tint, 
-    //        mode: DecalMode::Normal,    // TODO: get this from decal mode
-    //        structure: DecalStructure::Fan  // TODO:  
-    //    };
-//
-    //    self.layers[self.current_layer].decal_instances.push(di);
-    //}
+    pub fn draw_decal(&mut self, pos: Vec2, decal: &Decal, scale: Vec2, tint: &Color) {
+       let screen_space_pos = vec2(
+           (pos.x * self.inv_screen_size.x) * 2.0 - 1.0, 
+           (pos.x * self.inv_screen_size.x) * 2.0 - 1.0);
+       let screen_space_dim = vec2(
+           screen_space_pos.x + (2.0 * decal.width as f32 * self.inv_screen_size.x) * scale.x,
+           screen_space_pos.y - (2.0 * decal.height as f32 * self.inv_screen_size.y) * scale.y,
+       );
+
+       let di = DecalInstance { 
+           vertices: vec![
+            vert(screen_space_pos, vec2(0., 0.)), 
+            vert(vec2(screen_space_pos.x, screen_space_dim.y), vec2(0., 1.)), 
+            vert(screen_space_dim, vec2(1., 1.)),
+                vert(vec2(screen_space_dim.x, screen_space_pos.y), vec2(1., 0.))], 
+           tint: *tint, 
+           mode: DecalMode::Normal,    // TODO: get this from decal mode
+           structure: DecalStructure::Fan  // TODO:  
+       };
+
+       self.layers[self.current_layer].decal_instances.push(di);
+    }
 
     // render the layers surface and all decal instances
     fn render_layer(&mut self) {
@@ -371,7 +379,7 @@ impl PGE {
         }
     }
 
-    #[rustfmt::skip]
+    //#[rustfmt::skip]
     pub fn draw_line(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, p: &Pixel) {
         let mut x = x1;
         let mut y = y1;
@@ -739,13 +747,18 @@ impl<T> EventHandler for App<T> where T: GameLoop<GameType = T> + 'static {
     }
 }
 
+#[inline(always)]
+#[must_use]
+pub const fn vert(pos: Vec2, uv: Vec2) -> Vertex {
+    Vertex { pos, uv }
+}
+
 #[repr(C)]
+#[derive(Debug)]
 struct Vertex {
     pos: Vec2,
     uv: Vec2,
 }
-
-
 
 mod shader {
     use miniquad::*;
