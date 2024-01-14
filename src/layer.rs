@@ -5,7 +5,7 @@ use crate::{decal::DecalInstance, *};
 /*
     Each layer should be almost fully self contained
 */
-
+#[derive(Clone)]
 pub struct Layer {
     pub offset: Vec2,
     pub scale: Vec2,

@@ -4,7 +4,7 @@ use miniquad::*;
 use glam::*;
 use crate::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DecalMode {
     Normal,
     Additive,
@@ -15,7 +15,7 @@ pub enum DecalMode {
     Model3D,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DecalStructure {
     Line,
     Fan,
@@ -23,7 +23,7 @@ pub enum DecalStructure {
     List,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Decal {
     pub sprite: Weak<RefCell<Sprite>>,
     pub texture_id: TextureId,
@@ -65,7 +65,7 @@ impl Decal {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DecalInstance {
     pub vertices: Vec<Vertex>,
     pub tint: Color,

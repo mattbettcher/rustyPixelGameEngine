@@ -82,6 +82,7 @@ pub enum PixelMode {
     Normal, Mask, Alpha, Custom
 }
 
+#[derive(Clone)]
 pub struct Renderable {
     sprite: SpriteRef,
     decal: Decal,
@@ -101,8 +102,8 @@ pub struct PGE {
     //keyboard_map: HashMap<> TODO:
     pixel_width: i32,
     pixel_height: i32,
-    pipeline: Pipeline,
-    bindings: Bindings,
+    //pipeline: Pipeline,
+    //bindings: Bindings,
     ctx: Box<dyn RenderingBackend>,
     inv_screen_size: Vec2,
 
@@ -138,8 +139,8 @@ impl PGE {
     }
 
     fn new(width: usize, height: usize, pix_width: usize, pix_height: usize) -> Self {
-
         let mut ctx = window::new_rendering_backend();
+        
         let back_buffer = Sprite::new(width as u32, height as u32);
 
         //#[rustfmt::skip]
@@ -197,23 +198,26 @@ impl PGE {
 
         let bb_sprite_ref2 = Rc::downgrade(&bb_sprite_ref.0);
 
-
+        
         PGE { 
             screen_width: width, 
             screen_height: height, 
             pixel_width: pix_width as i32, 
             pixel_height: pix_height as i32, 
-            pipeline, bindings, 
+            //pipeline, bindings, 
             pixel_mode: PixelMode::Normal, 
             blend_factor: 1.0, 
             func_pixel_mode: None, 
             font: PGE::construct_font_sheet(),
+            // first layer is created inline
             layers: vec![ 
                 Layer { 
                     offset: Vec2::ZERO, 
                     scale: Vec2::ONE, 
                     show: true, 
                     update: true, 
+                    pipeline,
+                    bindings,
                     surface: Renderable { 
                         sprite: bb_sprite_ref, 
                         decal: Decal { 
@@ -256,12 +260,6 @@ impl PGE {
         self.mouse_pos.y
     }
 
-    //pub fn create_renderable(&mut self, width: u32, height: u32, filter: bool, clamp: bool) -> Renderable {
-    //    let sprite = Sprite::new(width, height);
-    //    let decal = self.create_decal(&sprite);
-    //    Renderable { sprite, decal }
-    //}
-
     pub fn create_texture(&mut self, width: u32, height: u32) -> TextureId {
         let texture = self.ctx.new_texture(
             TextureAccess::Static, 
@@ -300,21 +298,7 @@ impl PGE {
         self.ctx.delete_texture(id);
     }
 
-    //pub fn create_layer(&mut self) -> usize {
-    //    let layer = Layer { 
-    //        offset: Vec2::ZERO, 
-    //        scale: Vec2::ONE, 
-    //        show: false, 
-    //        update: false, 
-    //        surface: self.create_renderable(self.screen_width as u32, self.screen_height as u32, false, true), 
-    //        decal_instances: vec![], 
-    //        tint: WHITE, 
-    //        id: self.layers.len()
-    //    };
-    //    self.layers.push(layer);
-    //    return self.layers.len() - 1;
-    //}
-
+    // draws the given decal into the current layer
     pub fn draw_decal(&mut self, pos: Vec2, decal: &Decal, scale: Vec2, tint: &Color) {
        let screen_space_pos = vec2(
            (pos.x * self.inv_screen_size.x) * 2.0 - 1.0, 
@@ -332,15 +316,11 @@ impl PGE {
                 vert(vec2(screen_space_dim.x, screen_space_pos.y), vec2(1., 0.))], 
            tint: *tint, 
            mode: DecalMode::Normal,    // TODO: get this from decal mode
-           structure: DecalStructure::Fan  // TODO:  
+           structure: DecalStructure::Strip  // TODO: this will likely have to create a new vertex
+                                             //      & index buffer if changed
        };
 
        self.layers[self.current_layer].decal_instances.push(di);
-    }
-
-    // render the layers surface and all decal instances
-    fn render_layer(&mut self) {
-
     }
 
     #[inline]
@@ -666,6 +646,7 @@ impl PGE {
     }
 
     pub fn render(&mut self) {
+        /*
         self.ctx.texture_update(self.bindings.images[0], unsafe {
             let layer = if self.current_layer < self.layers.len() { self.current_layer }
             else { 0 };
@@ -681,8 +662,13 @@ impl PGE {
         self.ctx.end_render_pass();
 
         self.ctx.commit_frame();
-
-        //
+        */
+        
+        // TODO: need to find a way without clone
+        for i in 0..self.layers.len() {
+            let mut layer = self.layers[i].clone();
+            layer.render(self);
+        }
     }
 }
 
@@ -749,7 +735,7 @@ pub const fn vert(pos: Vec2, uv: Vec2) -> Vertex {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Vertex {
     pub pos: Vec2,
     pub uv: Vec2,
