@@ -1,4 +1,4 @@
-use pge::{PGE, Pixel, GameLoop, Sprite, Decal, SpriteRef};
+use pge::{PGE, Pixel, GameLoop, Sprite, Decal, SpriteRef, Layer};
 
 struct GameState {
     logo_ref: SpriteRef,
@@ -21,6 +21,9 @@ impl GameLoop for GameState {
         //let logo_ref = SpriteRef::new_with_data(image.width(), image.height(), raw_image);
         //let logo_decal = Decal::new_from_sprite_ref(pge, &logo_ref);
 
+        let layer = Layer::new(pge, 640, 480);
+        pge.layers.push(layer);
+
         GameState {
             logo_ref,
             logo_decal
@@ -36,6 +39,10 @@ impl GameLoop for GameState {
         // we can still draw a SpriteRef with the CPU drawing methods and even edit it,
         // we just have to use this ugly syntax.
         pge.draw_sprite(x, y, &self.logo_ref.get_sprite(), 1);
+        pge.current_layer = 1;
+        pge.clear(&Pixel::rgba(0,0,100, 0));
+        pge.draw_sprite(x, y, &self.logo_ref.get_sprite(), 1);
+        pge.current_layer = 0;
     }
 }
 

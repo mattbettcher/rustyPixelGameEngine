@@ -67,14 +67,6 @@ impl Layer {
             BufferSource::slice(&indices),
         );
 
-        let tints: [Vec4; 1] = [
-            vec4(1., 1., 1., 0.),
-        ];
-
-        let offsets: [Vec2; 1] = [
-            vec2(0.1, 0.1),
-        ];
-
         let bindings = Bindings {
             vertex_buffers: vec![vertex_buffer],
             index_buffer: index_buffer,
@@ -125,15 +117,15 @@ impl Layer {
                     height: height as u32,
                 }},
             decal_instances: vec![],
-            id: 0,  // TODO: not used
+            id: 1,  // TODO: not used
             pipeline,
             bindings,
-            uniforms: [UniformData { tint: vec4(1.,0.,0.,0.), offset: vec2(0.1,0.1) }],
+            uniforms: [UniformData { tint: vec4(1.,0.,0.,0.), offset: vec2(-0.1, -0.1) }],
         }
     }
 
     pub fn render(&mut self, ctx: &mut Box<dyn RenderingBackend>) {
-        ctx.texture_update(self.bindings.images[0], unsafe {
+        ctx.texture_update(self.bindings.images[self.id], unsafe {
             let len = self.surface.sprite.get_data_len();
             std::slice::from_raw_parts(self.surface.sprite.get_data_ptr(), len * 4)
         });

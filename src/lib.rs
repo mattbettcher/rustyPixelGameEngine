@@ -1,6 +1,6 @@
 use std::{cmp::{max, min}, rc::Rc};
 
-use layer::{Layer, UniformData};
+pub use layer::{Layer, UniformData};
 use miniquad::*;
 use glam::*;
 pub use sprite::*;
@@ -96,8 +96,8 @@ pub struct PGE {
     pub font: Sprite,
 
     /// Engine internal stuff
-    layers: Vec<Layer>,
-    current_layer: usize,
+    pub layers: Vec<Layer>,
+    pub current_layer: usize,
     //keyboard_map: HashMap<> TODO:
     pixel_width: i32,
     pixel_height: i32,
