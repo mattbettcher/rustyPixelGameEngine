@@ -214,6 +214,7 @@ impl PGE {
                     update: true, 
                     pipeline,
                     bindings,
+                    uniforms: [vec4(0., 1., 1., 0.)],
                     surface: Renderable { 
                         sprite: bb_sprite_ref, 
                         decal: Decal { 
@@ -731,15 +732,21 @@ mod shader {
     varying lowp vec2 texcoord;
 
     uniform sampler2D tex;
+    uniform lowp vec4 tint;
 
     void main() {
-        gl_FragColor = texture2D(tex, texcoord);
+        gl_FragColor = texture2D(tex, texcoord) * tint;
     }"#;
 
     pub fn meta() -> ShaderMeta {
         ShaderMeta {
             images: vec!["tex".to_string()],
-            uniforms: UniformBlockLayout { uniforms: vec![] },
+            uniforms: UniformBlockLayout { uniforms: vec![
+                UniformDesc { 
+                    name: "tint".to_string(), 
+                    uniform_type: UniformType::Float4,
+                    array_count: 1 
+                }] },
         }
     }
 }

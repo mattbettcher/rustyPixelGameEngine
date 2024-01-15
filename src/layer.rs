@@ -5,7 +5,7 @@ use crate::{decal::DecalInstance, *};
 /*
     Each layer should be almost fully self contained
 */
-#[derive(Debug)]
+
 pub struct Layer {
     pub offset: Vec2,
     pub scale: Vec2,
@@ -17,6 +17,7 @@ pub struct Layer {
     pub id: usize,
     pub pipeline: Pipeline,
     pub bindings: Bindings,
+    pub uniforms: [Vec4; 1],
 }
 
 impl Layer {
@@ -45,13 +46,25 @@ impl Layer {
             BufferSource::slice(&vertices),
         );
 
-        // TODO: index buffer should be fully pre-initialized?
-        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+        let mut indices = Vec::with_capacity(u16::MAX as usize);
+        for i in (0..u16::MAX).step_by(4) {
+            indices.push(i + 0);
+            indices.push(i + 1);
+            indices.push(i + 2);
+            indices.push(i + 0);
+            indices.push(i + 2);
+            indices.push(i + 3);
+        }
+        
         let index_buffer = pge.ctx.new_buffer(
             BufferType::IndexBuffer,
             BufferUsage::Immutable,
             BufferSource::slice(&indices),
         );
+
+        let tints: [Vec4; 1] = [
+            vec4(1., 1., 1., 0.),
+        ];
 
         let bindings = Bindings {
             vertex_buffers: vec![vertex_buffer],
@@ -106,6 +119,7 @@ impl Layer {
             id: 0,  // TODO: not used
             pipeline,
             bindings,
+            uniforms: tints,
         }
     }
 
@@ -119,6 +133,7 @@ impl Layer {
 
         ctx.apply_pipeline(&self.pipeline);
         ctx.apply_bindings(&self.bindings);
+        ctx.apply_uniforms_from_bytes(self.uniforms.as_ptr() as *const u8, 1);
         ctx.draw(0, 6, 1);
         ctx.end_render_pass();
 
