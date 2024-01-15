@@ -1,6 +1,6 @@
 use std::{cmp::{max, min}, rc::Rc};
 
-use layer::Layer;
+use layer::{Layer, UniformData};
 use miniquad::*;
 use glam::*;
 pub use sprite::*;
@@ -214,7 +214,7 @@ impl PGE {
                     update: true, 
                     pipeline,
                     bindings,
-                    uniforms: [vec4(0., 1., 1., 0.)],
+                    uniforms: [UniformData { tint: vec4(1.,0.,0.,0.), offset: vec2(0.1,0.1) }],
                     surface: Renderable { 
                         sprite: bb_sprite_ref, 
                         decal: Decal { 
@@ -722,9 +722,10 @@ mod shader {
     attribute vec2 in_uv;
 
     varying lowp vec2 texcoord;
+    uniform lowp vec2 offset;
 
     void main() {
-        gl_Position = vec4(in_pos, 0, 1);
+        gl_Position = vec4(in_pos + offset, 0, 1);
         texcoord = in_uv;
     }"#;
 
@@ -746,7 +747,13 @@ mod shader {
                     name: "tint".to_string(), 
                     uniform_type: UniformType::Float4,
                     array_count: 1 
-                }] },
+                },
+                UniformDesc { 
+                    name: "offset".to_string(), 
+                    uniform_type: UniformType::Float2,
+                    array_count: 1 
+                }
+                ] },
         }
     }
 }

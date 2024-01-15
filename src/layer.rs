@@ -17,7 +17,12 @@ pub struct Layer {
     pub id: usize,
     pub pipeline: Pipeline,
     pub bindings: Bindings,
-    pub uniforms: [Vec4; 1],
+    pub uniforms: [UniformData; 1],
+}
+
+pub struct UniformData {
+    pub tint: Vec4,
+    pub offset: Vec2,
 }
 
 impl Layer {
@@ -64,6 +69,10 @@ impl Layer {
 
         let tints: [Vec4; 1] = [
             vec4(1., 1., 1., 0.),
+        ];
+
+        let offsets: [Vec2; 1] = [
+            vec2(0.1, 0.1),
         ];
 
         let bindings = Bindings {
@@ -119,7 +128,7 @@ impl Layer {
             id: 0,  // TODO: not used
             pipeline,
             bindings,
-            uniforms: tints,
+            uniforms: [UniformData { tint: vec4(1.,0.,0.,0.), offset: vec2(0.1,0.1) }],
         }
     }
 
