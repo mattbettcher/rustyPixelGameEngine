@@ -184,13 +184,24 @@ impl PGE {
                 shader::meta(),
             )
             .unwrap();
-        let pipeline = ctx.new_pipeline(
+
+        let params = PipelineParams {
+            color_blend: Some(BlendState::new(
+                Equation::Add,
+                BlendFactor::Value(BlendValue::SourceAlpha),
+                BlendFactor::OneMinusValue(BlendValue::SourceAlpha))
+            ),
+            ..Default::default()
+        };
+
+        let pipeline = ctx.new_pipeline_with_params(
             &[BufferLayout::default()],
             &[
                 VertexAttribute::new("in_pos", VertexFormat::Float2),
                 VertexAttribute::new("in_uv", VertexFormat::Float2),
             ],
             shader,
+            params
         );
 
         let bb_sprite_ref2 = Rc::downgrade(&bb_sprite_ref.0);
@@ -214,7 +225,7 @@ impl PGE {
                     update: true, 
                     pipeline,
                     bindings,
-                    uniforms: [UniformData { tint: vec4(1.,0.,0.,0.), offset: vec2(0.1,0.1) }],
+                    uniforms: [UniformData { tint: vec4(1.,1.,1.,0.), offset: vec2(0.1,0.1) }],
                     surface: Renderable { 
                         sprite: bb_sprite_ref, 
                         decal: Decal { 
@@ -340,7 +351,8 @@ impl PGE {
                     let r = a.mul_add(p.r as f32, c * d.r as f32);
                     let g = a.mul_add(p.g as f32, c * d.g as f32);
                     let b = a.mul_add(p.b as f32, c * d.b as f32);
-                    self.layers[self.current_layer].surface.sprite.set_pixel(x, y, &Pixel::rgb(r as u8, g as u8, b as u8));
+                    let a = a.mul_add(p.a as f32, c * d.a as f32);
+                    self.layers[self.current_layer].surface.sprite.set_pixel(x, y, &Pixel::rgba(r as u8, g as u8, b as u8, a as u8));
                 },
                 PixelMode::Custom => {
                     if let Some(fpm) = self.func_pixel_mode {
@@ -725,7 +737,7 @@ mod shader {
     uniform lowp vec2 offset;
 
     void main() {
-        gl_Position = vec4(in_pos + offset, 0, 1);
+        gl_Position = vec4(in_pos, 0, 1);
         texcoord = in_uv;
     }"#;
 
@@ -736,7 +748,7 @@ mod shader {
     uniform lowp vec4 tint;
 
     void main() {
-        gl_FragColor = texture2D(tex, texcoord) * tint;
+        gl_FragColor = texture2D(tex, texcoord);
     }"#;
 
     pub fn meta() -> ShaderMeta {

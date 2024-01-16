@@ -91,14 +91,25 @@ impl Layer {
             .unwrap();
 
         // TODO: add offset, scale, tint, into the shader as variables
-        let pipeline = pge.ctx.new_pipeline(
+        let params = PipelineParams {
+            color_blend: Some(BlendState::new(
+                Equation::Add,
+                BlendFactor::Value(BlendValue::SourceAlpha),
+                BlendFactor::OneMinusValue(BlendValue::SourceAlpha))
+            ),
+            ..Default::default()
+        };
+
+        let pipeline = pge.ctx.new_pipeline_with_params(
             &[BufferLayout::default()],
             &[
                 VertexAttribute::new("in_pos", VertexFormat::Float2),
                 VertexAttribute::new("in_uv", VertexFormat::Float2),
                 // TODO: add per triangle stuff here?
+
             ],
             shader,
+            params
         );
 
         Layer {
@@ -125,13 +136,13 @@ impl Layer {
     }
 
     pub fn render(&mut self, ctx: &mut Box<dyn RenderingBackend>) {
-        ctx.texture_update(self.bindings.images[self.id], unsafe {
+        // always update the back buffer image (it's always index 0)
+        ctx.texture_update(self.bindings.images[0], unsafe {
             let len = self.surface.sprite.get_data_len();
             std::slice::from_raw_parts(self.surface.sprite.get_data_ptr(), len * 4)
         });
 
-        ctx.begin_default_pass(Default::default());
-
+        ctx.begin_default_pass(PassAction::Nothing);//Default::default());
         ctx.apply_pipeline(&self.pipeline);
         ctx.apply_bindings(&self.bindings);
         ctx.apply_uniforms_from_bytes(self.uniforms.as_ptr() as *const u8, 1);

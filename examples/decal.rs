@@ -1,4 +1,4 @@
-use pge::{PGE, Pixel, GameLoop, Sprite, Decal, SpriteRef, Layer};
+use pge::{PGE, Pixel, GameLoop, Sprite, Decal, SpriteRef, Layer, BLANK, WHITE, PixelMode, color};
 
 struct GameState {
     logo_ref: SpriteRef,
@@ -31,17 +31,18 @@ impl GameLoop for GameState {
     }
 
     fn update(&mut self, pge: &mut PGE, _dt: f64) {
-        pge.clear(&Pixel::rgb(0,0,100));
+        pge.clear(&WHITE);
 
         let x = pge.get_mouse_x();
         let y = pge.get_mouse_y();
 
         // we can still draw a SpriteRef with the CPU drawing methods and even edit it,
         // we just have to use this ugly syntax.
+        pge.pixel_mode = PixelMode::Alpha;
         pge.draw_sprite(x, y, &self.logo_ref.get_sprite(), 1);
         pge.current_layer = 1;
-        pge.clear(&Pixel::rgba(0,0,100, 0));
-        pge.draw_sprite(x, y, &self.logo_ref.get_sprite(), 1);
+        pge.clear(&BLANK);
+        pge.draw_sprite(x + 100, y - 40, &self.logo_ref.get_sprite(), 2);
         pge.current_layer = 0;
     }
 }

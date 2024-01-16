@@ -61,7 +61,7 @@ impl SpriteRef {
 
     pub fn clear(&mut self, p: Pixel) {
         let mut sprite = self.0.borrow_mut();
-        sprite.pixel_data.fill(p);
+        sprite.clear(p);
     }
 
     pub unsafe fn get_data_ptr(&self) -> *const u8 {
@@ -171,6 +171,8 @@ impl Sprite {
     }
 
     pub fn clear(&mut self, p: Pixel) {
-        self.pixel_data.clear();
+        for i in 0..self.pixel_data.len() {
+            self.pixel_data[i] = p;
+        }
     }
 }
