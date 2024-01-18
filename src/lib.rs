@@ -225,7 +225,7 @@ impl PGE {
                     update: true, 
                     pipeline,
                     bindings,
-                    uniforms: [UniformData { tint: vec4(1.,1.,1.,0.), offset: vec2(0.1,0.1) }],
+                    uniforms: [UniformData { tint: vec4(1.,1.,1.,0.5), offset: vec2(0.1,0.1) }],
                     surface: Renderable { 
                         sprite: bb_sprite_ref, 
                         decal: Decal { 
@@ -737,7 +737,7 @@ mod shader {
     uniform lowp vec2 offset;
 
     void main() {
-        gl_Position = vec4(in_pos, 0, 1);
+        gl_Position = vec4(in_pos + offset, 0, 1);
         texcoord = in_uv;
     }"#;
 
@@ -748,7 +748,8 @@ mod shader {
     uniform lowp vec4 tint;
 
     void main() {
-        gl_FragColor = texture2D(tex, texcoord);
+        lowp vec4 color = texture2D(tex, texcoord);
+        gl_FragColor = vec4(color.xyz * tint.xyz, color.w);
     }"#;
 
     pub fn meta() -> ShaderMeta {

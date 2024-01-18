@@ -39,10 +39,10 @@ impl GameLoop for GameState {
         // we can still draw a SpriteRef with the CPU drawing methods and even edit it,
         // we just have to use this ugly syntax.
         pge.pixel_mode = PixelMode::Alpha;
-        pge.draw_sprite(x, y, &self.logo_ref.get_sprite(), 1);
+        pge.draw_sprite(x - 50, y, &self.logo_ref.get_sprite(), 1);
         pge.current_layer = 1;
         pge.clear(&BLANK);
-        pge.draw_sprite(x + 100, y - 40, &self.logo_ref.get_sprite(), 2);
+        pge.draw_sprite(x + 100, y - 100, &self.logo_ref.get_sprite(), 2);
         pge.current_layer = 0;
     }
 }
