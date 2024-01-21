@@ -131,6 +131,7 @@ impl Layer {
             id: 1,  // TODO: not used
             pipeline,
             bindings,
+            // These are per layer and applied to everything on the layer
             uniforms: [UniformData { tint: vec4(1.,0.,0.,0.), offset: vec2(-0.1, -0.1) }],
         }
     }
