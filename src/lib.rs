@@ -194,7 +194,7 @@ impl PGE {
             ..Default::default()
         };
 
-        let pipeline = ctx.new_pipeline_with_params(
+        let pipeline = ctx.new_pipeline(
             &[BufferLayout::default()],
             &[
                 VertexAttribute::new("in_pos", VertexFormat::Float2),
@@ -281,7 +281,8 @@ impl PGE {
                 mipmap_filter: MipmapFilterMode::Linear, 
                 width: width, 
                 height: height, 
-                allocate_mipmaps: false 
+                allocate_mipmaps: false,
+                sample_count: 1, 
             });
         texture
     }
@@ -745,11 +746,11 @@ mod shader {
     varying lowp vec2 texcoord;
 
     uniform sampler2D tex;
-    uniform lowp vec4 tint;
+    //uniform lowp vec4 tint;
 
     void main() {
         lowp vec4 color = texture2D(tex, texcoord);
-        gl_FragColor = vec4(color.xyz * tint.xyz, color.w);
+        gl_FragColor = vec4(color.xyz, color.w);
     }"#;
 
     pub fn meta() -> ShaderMeta {

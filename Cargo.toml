@@ -7,7 +7,7 @@ description = "A port of olcPixelGameEngine to Rust, a tool used in javidx9's Yo
 license-file = "LICENSE.md"
 
 [dependencies]
-miniquad = { version = "0.4.0-alpha.10" }
+miniquad = "0.4.8"
 glam = "0.25.0"
 image = "0.24"
 

@@ -100,7 +100,7 @@ impl Layer {
             ..Default::default()
         };
 
-        let pipeline = pge.ctx.new_pipeline_with_params(
+        let pipeline = pge.ctx.new_pipeline(
             &[BufferLayout::default()],
             &[
                 VertexAttribute::new("in_pos", VertexFormat::Float2),
@@ -143,10 +143,11 @@ impl Layer {
             std::slice::from_raw_parts(self.surface.sprite.get_data_ptr(), len * 4)
         });
 
-        ctx.begin_default_pass(PassAction::Nothing);//Default::default());
+        ctx.begin_default_pass(Default::default());
         ctx.apply_pipeline(&self.pipeline);
         ctx.apply_bindings(&self.bindings);
-        ctx.apply_uniforms_from_bytes(self.uniforms.as_ptr() as *const u8, 1);
+        //ctx.apply_uniforms_from_bytes(self.uniforms.as_ptr() as *const u8, 1);
+        //ctx.apply_uniforms(UniformsSource::table(&shader::U));
         ctx.draw(0, 6, 1);
         ctx.end_render_pass();
 
